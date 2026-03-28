@@ -1,25 +1,43 @@
 // src/pages/AddEmployeePage.jsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { addEmployee } from '../services/apiService';
+import { addEmployee, getManagers } from '../services/apiService';
 import '../styles/AddEmployee.css'; 
 
 // 1. Import SweetAlert2
 import Swal from 'sweetalert2';
+import { useAuth } from '../context/AuthContext';
 
 const AddEmployeePage = () => {
+    const { user } = useAuth();
     const [formData, setFormData] = useState({
         name: '',
         designation: '',
         basic_salary: '',
-        standard_work_days: ''
+        standard_work_days: '',
+        manager_id: ''
     });
+    const [managers, setManagers] = useState([]);
     const [passportFile, setPassportFile] = useState(null);
     const [visaFile, setVisaFile] = useState(null);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const loadManagers = async () => {
+            if (user?.role === 'SuperAdmin' || user?.role === 'Admin') {
+                try {
+                    const data = await getManagers();
+                    setManagers(data || []);
+                } catch (err) {
+                    console.error('Failed to load managers:', err);
+                }
+            }
+        };
+        loadManagers();
+    }, [user]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -52,10 +70,16 @@ const AddEmployeePage = () => {
 
         const submissionData = new FormData();
         Object.keys(formData).forEach(key => {
-            submissionData.append(key, formData[key]);
+            if (key !== 'manager_id') {
+                submissionData.append(key, formData[key]);
+            }
         });
         submissionData.append('passport_file', passportFile);
         submissionData.append('visa_file', visaFile);
+
+        if (formData.manager_id) {
+            submissionData.append('manager_id', formData.manager_id);
+        }
 
         try {
             await addEmployee(submissionData);
@@ -109,6 +133,19 @@ const AddEmployeePage = () => {
                         <label>Standard Work Days</label>
                         <input type="number" name="standard_work_days" value={formData.standard_work_days} onChange={handleInputChange} required />
                     </div>
+                    {(user?.role === 'SuperAdmin' || user?.role === 'Admin') && managers.length > 0 && (
+                        <div className="form-group">
+                            <label>Assign Reporting Manager <span style={{ fontWeight: 'normal', color: '#888' }}>(Optional)</span></label>
+                            <select name="manager_id" value={formData.manager_id} onChange={handleInputChange}>
+                                <option value="">-- Select a manager (optional) --</option>
+                                {managers.map(m => (
+                                    <option key={m.id} value={m.id}>
+                                        {m.full_name} {m.designation ? `(${m.designation})` : ''}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
                     <div className="form-group">
                         <label>Passport Upload</label>
                         <input type="file" accept="image/*,.pdf" onChange={(e) => handleFileChange(e, setPassportFile)} required />

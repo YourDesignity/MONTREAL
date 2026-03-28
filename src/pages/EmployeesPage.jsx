@@ -12,7 +12,7 @@ import dayjs from 'dayjs';
 // --- Services ---
 import { 
     getEmployees, createPayslips, 
-    updateEmployee, deleteEmployee, getAdmins, getDutyAssignments 
+    updateEmployee, deleteEmployee, getManagers, getDutyAssignments 
 } from '../services/apiService';
 import websocketService from '../services/websocketService';
 import { useAuth } from '../context/AuthContext'; 
@@ -49,7 +49,7 @@ function EmployeesPage() {
             
             // Fetch necessary data based on role
             const promises = [getEmployees(), getDutyAssignments(today)];
-            if (isHighLevelAdmin) promises.push(getAdmins());
+            if (isHighLevelAdmin) promises.push(getManagers());
 
             const results = await Promise.all(promises);
             const empData = results[0] || [];
@@ -273,7 +273,7 @@ function EmployeesPage() {
                     
                     {isHighLevelAdmin && (
                         <Form.Item name="manager_id" label="Assign Reporting Manager">
-                            <Select placeholder="Select Manager">
+                            <Select placeholder="Select Manager" allowClear>
                                 {managers.map(m => (
                                     <Option key={m.id} value={m.id}>{m.full_name}</Option>
                                 ))}

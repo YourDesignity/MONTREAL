@@ -43,6 +43,18 @@ def save_upload_file(upload_file: UploadFile, destination: str) -> str:
         upload_file.file.close()
     return destination
 
+# --- Helper: Validate Manager ---
+async def validate_manager(manager_id: int):
+    """Validates that the given ID belongs to an active Site Manager admin."""
+    manager_admin = await Admin.find_one(Admin.uid == manager_id)
+    if not manager_admin:
+        raise HTTPException(status_code=400, detail="Invalid manager ID")
+    if manager_admin.role != "Site Manager":
+        raise HTTPException(status_code=400, detail="Selected admin is not a Site Manager")
+    if not manager_admin.is_active:
+        raise HTTPException(status_code=400, detail="Selected manager is not active")
+    return manager_admin
+
 # =============================================================================
 # 1. GET EMPLOYEES (Manager-Aware Filtering)
 # =============================================================================
@@ -137,6 +149,7 @@ async def create_employee(
     standard_work_days: int = Form(...),
     passport_file: UploadFile = File(...),
     visa_file: UploadFile = File(...),
+    manager_id: Optional[int] = Form(None),
     current_user: dict = Depends(get_current_active_user)
 ):
     # Only High-level admins can add new employees to the system
@@ -144,6 +157,11 @@ async def create_employee(
         raise HTTPException(status_code=403, detail="Only Admins can create new employee records.")
 
     try:
+        # Validate manager if provided
+        if manager_id is not None:
+            manager_admin = await validate_manager(manager_id)
+            logger.info(f"Validated manager assignment: {manager_admin.full_name} (ID: {manager_id})")
+
         # File pathing
         timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         passport_path = os.path.join(UPLOAD_DIRECTORY, "passports", f"pp_{timestamp}_{passport_file.filename}")
@@ -162,10 +180,13 @@ async def create_employee(
             passport_path=passport_path,
             visa_path=visa_path,
             status="Active",
-            allowance=0.0
+            allowance=0.0,
+            manager_id=manager_id
         )
         
         await new_employee.insert()
+        
+        logger.info(f"Employee created: {name} (ID: {new_uid}, Manager: {manager_id or 'None'})")
         
         # Broadcast via WebSocket
         emp_dict = new_employee.model_dump(mode='json')
@@ -174,6 +195,8 @@ async def create_employee(
         
         return new_employee
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Creation Error: {e}")
         raise HTTPException(status_code=500, detail="Failed to create employee")
@@ -194,15 +217,25 @@ async def update_employee(
     # Manager Check
     if current_user.get("role") not in ["SuperAdmin", "Admin"]:
         me = await Admin.find_one(Admin.email == current_user.get("sub"))
+        # Managers cannot change manager assignments
+        if "manager_id" in employee_update.model_dump(exclude_unset=True):
+            raise HTTPException(status_code=403, detail="Only admins can change manager assignments.")
         if emp.manager_id != me.uid:
             raise HTTPException(status_code=403, detail="You can only update employees assigned to you.")
 
-    # Apply updates
+    # Validate new manager if being changed
     data = employee_update.model_dump(exclude_unset=True)
+    if "manager_id" in data and data["manager_id"] is not None:
+        new_manager = await validate_manager(data["manager_id"])
+        logger.info(f"Manager change for employee {employee_id}: {emp.manager_id} → {data['manager_id']}")
+
+    # Apply updates
     for key, value in data.items():
         setattr(emp, key, value)
     
     await emp.save()
+    
+    logger.info(f"Employee {employee_id} updated. Manager: {emp.manager_id or 'None'}")
     
     # WebSocket Broadcast
     emp_dict = emp.model_dump(mode='json')
