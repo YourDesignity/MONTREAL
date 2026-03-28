@@ -1,25 +1,42 @@
 // src/pages/AddEmployeePage.jsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { addEmployee } from '../services/apiService';
+import { addEmployee, getManagers } from '../services/apiService';
+import { useAuth } from '../context/AuthContext';
 import '../styles/AddEmployee.css'; 
 
 // 1. Import SweetAlert2
 import Swal from 'sweetalert2';
 
 const AddEmployeePage = () => {
+    const { user } = useAuth();
+    const isHighLevelAdmin = user?.role === 'SuperAdmin' || user?.role === 'Admin';
+
     const [formData, setFormData] = useState({
         name: '',
         designation: '',
         basic_salary: '',
         standard_work_days: ''
     });
+    const [managerId, setManagerId] = useState('');
+    const [managers, setManagers] = useState([]);
     const [passportFile, setPassportFile] = useState(null);
     const [visaFile, setVisaFile] = useState(null);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        if (isHighLevelAdmin) {
+            getManagers()
+                .then(data => setManagers(data || []))
+                .catch((err) => {
+                    console.error('Failed to load managers:', err);
+                    setManagers([]);
+                });
+        }
+    }, [isHighLevelAdmin]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -56,6 +73,9 @@ const AddEmployeePage = () => {
         });
         submissionData.append('passport_file', passportFile);
         submissionData.append('visa_file', visaFile);
+        if (isHighLevelAdmin && managerId) {
+            submissionData.append('manager_id', managerId);
+        }
 
         try {
             await addEmployee(submissionData);
@@ -117,6 +137,17 @@ const AddEmployeePage = () => {
                         <label>Visa Upload</label>
                         <input type="file" accept="image/*,.pdf" onChange={(e) => handleFileChange(e, setVisaFile)} required />
                     </div>
+                    {isHighLevelAdmin && (
+                        <div className="form-group">
+                            <label>Assign Reporting Manager</label>
+                            <select value={managerId} onChange={(e) => setManagerId(e.target.value)}>
+                                <option value="">-- Select Manager (Optional) --</option>
+                                {managers.map(m => (
+                                    <option key={m.id} value={m.id}>{m.full_name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
                     <button type="submit" className="form-submit-btn" disabled={isLoading}>
                         {isLoading ? 'Submitting...' : 'Add Employee'}
                     </button>
