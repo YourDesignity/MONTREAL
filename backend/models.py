@@ -110,7 +110,9 @@ class Deduction(Document, MemoryNode):
 class DutyAssignment(Document):
     employee_id: int
     site_id: int
-    date: str
+    manager_id: int
+    start_date: str
+    end_date: str
     class Settings:
         name = "duty_assignments"
 
