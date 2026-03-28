@@ -3,6 +3,7 @@
 import React, { createContext, useState, useContext } from 'react';
 import { jwtDecode } from 'jwt-decode'; 
 import * as apiService from '../services/apiService';
+import websocketService from '../services/websocketService';
 
 const AuthContext = createContext(null);
 
@@ -59,7 +60,9 @@ export const AuthProvider = ({ children }) => {
             
             setToken(access_token);
             setUser(decodedUser);
-            
+
+            websocketService.connect();
+
             return decodedUser;
         } catch (error) {
             console.error("Login Flow Error:", error);
@@ -75,6 +78,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('currentUser');
         setToken(null);
         setUser(null);
+        websocketService.disconnect();
     };
 
     return (

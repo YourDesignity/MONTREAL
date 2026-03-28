@@ -245,7 +245,7 @@ const DutyListPage = () => {
                 onCancel={() => setIsModalOpen(false)} 
                 confirmLoading={isSubmitting}
                 okText="Complete Assignment"
-                destroyOnClose={true}
+                destroyOnHidden
             >
                 <Form form={form} layout="vertical" initialValues={{ date: dayjs() }}>
                     <Form.Item 
