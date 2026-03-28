@@ -1,0 +1,403 @@
+from typing import List, Optional, Dict, Any, Annotated
+from datetime import datetime
+from beanie import Document, Indexed
+from pydantic import Field, BaseModel
+
+# =============================================================================
+# 1. UTILITIES & BASE MODEL
+# =============================================================================
+
+class Counter(Document):
+    collection_name: Annotated[str, Indexed(unique=True)] 
+    current_uid: int = 0
+    class Settings:
+        name = "counters"
+
+class MemoryNode(BaseModel):
+    uid: Optional[int] = None 
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
+    is_active: bool = True
+    specs: Dict[str, Any] = {}
+    class Config:
+        json_encoders = {datetime: lambda v: v.isoformat()}
+
+# =============================================================================
+# 2. CORE ENTITIES
+# =============================================================================
+
+class Admin(Document, MemoryNode):
+    email: Annotated[str, Indexed(unique=True)]
+    hashed_password: str
+    full_name: str
+    designation: str
+    role: str                       
+    permissions: List[str] = []     
+    assigned_site_uids: List[int] = [] 
+    class Settings:
+        name = "admins"
+
+class Employee(Document, MemoryNode):
+    name: str
+    designation: str
+    basic_salary: float
+    allowance: float = 0.0
+    standard_work_days: int
+    default_hourly_rate: float = 0.0
+    status: str = "Active"
+    passport_path: Optional[str] = None
+    visa_path: Optional[str] = None
+    manager_id: Optional[int] = None 
+    class Settings:
+        name = "employees"
+
+class Site(Document, MemoryNode):
+    name: Annotated[str, Indexed(unique=True)]
+    location: str
+    manager_uid: Optional[int] = None
+    description: Optional[str] = None
+    phone: Optional[str] = None
+    class Settings:
+        name = "sites"
+
+class Designation(Document, MemoryNode):
+    title: Annotated[str, Indexed(unique=True)]
+    class Settings:
+        name = "designations"
+
+# =============================================================================
+# 3. OPERATIONS
+# =============================================================================
+
+class Attendance(Document, MemoryNode):
+    employee_uid: Optional[int] = None
+    site_uid: Optional[int] = None
+    date: str       
+    status: str
+    shift: Optional[str] = "Morning"
+    overtime_hours: Optional[int] = 0 
+    class Settings:
+        name = "attendance"
+        indexes = [[("employee_uid", 1), ("date", 1)]]
+
+class Schedule(Document, MemoryNode):
+    employee_uid: Optional[int] = None
+    site_uid: int
+    work_date: str
+    task: str
+    shift_type: Optional[str] = None
+    class Settings:
+        name = "schedules"
+        indexes = [[("employee_uid", 1), ("work_date", 1)]]
+
+class Overtime(Document, MemoryNode):
+    employee_uid: Optional[int] = None
+    date: str
+    hours: float
+    type: str 
+    reason: Optional[str] = None
+    class Settings:
+        name = "overtime"
+
+class Deduction(Document, MemoryNode):
+    employee_uid: Optional[int] = None
+    pay_period: str
+    amount: float
+    reason: Optional[str] = None
+    class Settings:
+        name = "deductions"
+
+class DutyAssignment(Document):
+    employee_id: int
+    site_id: int
+    date: str
+    class Settings:
+        name = "duty_assignments"
+
+# =============================================================================
+# 4. VEHICLE MANAGEMENT
+# =============================================================================
+
+class Vehicle(Document, MemoryNode):
+    model: str
+    plate: Annotated[str, Indexed(unique=True)]
+    type: str  
+    status: str = "Available" 
+    current_mileage: float = 0.0
+    registration_expiry: Optional[str] = None 
+    insurance_expiry: Optional[str] = None
+    pollution_expiry: Optional[str] = None
+    class Settings:
+        name = "vehicles"
+
+class TripLog(Document, MemoryNode):
+    vehicle_uid: int
+    vehicle_plate: Optional[str] = None
+    driver_name: str
+    out_time: Optional[datetime] = None
+    in_time: Optional[datetime] = None
+    purpose: str
+    status: str = "Ongoing"
+    start_mileage: float = 0.0
+    end_mileage: float = 0.0 
+    start_condition: str = "Good"
+    end_condition: Optional[str] = None
+    class Settings:
+        name = "vehicle_trips"
+
+class VehicleExpense(Document, MemoryNode):
+    vehicle_uid: int
+    vehicle_plate: Optional[str] = None
+    driver_name: str
+    category: str
+    amount: float
+    date: str
+    description: Optional[str] = None
+    class Settings:
+        name = "vehicle_expenses"
+
+class MaintenanceLog(Document, MemoryNode):
+    vehicle_uid: int
+    vehicle_plate: Optional[str] = None
+    service_type: str 
+    cost: float
+    service_date: str
+    next_due_date: Optional[str] = None
+    notes: Optional[str] = None
+    class Settings:
+        name = "vehicle_maintenance"
+
+class FuelLog(Document, MemoryNode):
+    vehicle_uid: int
+    vehicle_plate: Optional[str] = None
+    date: str
+    liters: float
+    cost: float
+    odometer: float
+    filled_by: Optional[str] = None
+    class Settings:
+        name = "vehicle_fuel"
+
+# =============================================================================
+# 5. CONTRACTS & INVOICE MANAGEMENT
+# =============================================================================
+
+class ProjectExpense(BaseModel):
+    uid: Optional[int] = None
+    category: str 
+    description: str
+    amount: float
+    date: datetime = Field(default_factory=datetime.now)
+
+class ContractItem(BaseModel): 
+    item_code: Optional[str] = None
+    description: str
+    quantity: float = 0.0
+    unit_rate: float = 0.0
+    total_value: float = 0.0
+
+class ContractWorkforce(BaseModel):
+    name: str
+    role: str
+    days: int = 0
+
+class Contract(Document, MemoryNode):
+    title: str
+    client: str
+    contract_type: str = "Labour" 
+    status: str = "Active" 
+    total_value: float = 0.0
+    payment_terms: Optional[str] = None 
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    workforce: List[ContractWorkforce] = [] 
+    items: List[ContractItem] = []           
+    expenses: List[ProjectExpense] = [] 
+    class Settings:
+        name = "contracts"
+
+class InvoiceItem(BaseModel):
+    description: str
+    quantity: float
+    unit_rate: float
+    total: float
+
+class Invoice(Document, MemoryNode):
+    invoice_no: Optional[str] = None # FIXED: Made optional for 422 error
+    project_uid: int
+    client_name: str
+    date: str
+    due_date: str
+    items: List[InvoiceItem] = []
+    total_amount: float
+    status: str = "Unpaid"
+    class Settings:
+        name = "invoices"
+
+# =============================================================================
+# 6. INVENTORY MANAGEMENT
+# =============================================================================
+
+class InventoryItem(Document, MemoryNode):
+    name: str
+    category: str 
+    stock: int
+    unit: str      
+    price: float   
+    supplier: Optional[str] = None
+    status: str = "In Stock"
+    class Settings:
+        name = "inventory_items"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# # backend/models.py
+
+# from typing import List, Optional, Dict, Any, Annotated # <--- Added Annotated
+# from datetime import datetime
+# from beanie import Document, Indexed
+# from pydantic import Field, EmailStr
+
+# # =============================================================================
+# # 1. THE ENGINE ROOM (Utilities)
+# # =============================================================================
+
+# class Counter(Document):
+#     """
+#     Internal Helper: Keeps track of the auto-increment numbers.
+#     """
+#     # FIX: Use Annotated for Pylance compatibility
+#     collection_name: Annotated[str, Indexed(unique=True)] 
+#     current_uid: int = 0
+    
+#     class Settings:
+#         name = "counters"
+
+# # =============================================================================
+# # 2. THE UNIVERSAL MEMORY TEMPLATE (Base Class)
+# # =============================================================================
+
+# class MemoryNode(Document):
+#     """
+#     The DNA shared by all entities.
+#     """
+#     # FIX: Use Annotated[int, Indexed(...)]
+#     # This tells Pylance: "It is an int, and it has an Index of unique=True"
+#     uid: Annotated[int, Indexed(unique=True)]
+    
+#     created_at: datetime = Field(default_factory=datetime.now)
+#     updated_at: datetime = Field(default_factory=datetime.now)
+#     is_active: bool = True
+    
+#     # DYNAMIC MEMORY (The "One Time Code" Feature)
+#     specs: Dict[str, Any] = {}
+
+#     class Settings:
+#         is_root = True 
+#         # Maps 'uid' to 'id' when converting to JSON for Frontend
+#         json_encoders = {datetime: lambda v: v.isoformat()}
+
+# # =============================================================================
+# # 3. THE ENTITIES (The Actors)
+# # =============================================================================
+
+# class Admin(MemoryNode):
+#     email: Annotated[str, Indexed(unique=True)] # FIX
+#     hashed_password: str
+#     full_name: str
+#     designation: str
+    
+#     # Security Profile
+#     role: str                       
+#     permissions: List[str] = []     
+#     assigned_site_uids: List[int] = [] 
+
+#     class Settings:
+#         name = "admins"
+
+# class Employee(MemoryNode):
+#     name: str
+#     designation: str
+    
+#     # Financials
+#     basic_salary: float
+#     allowance: float = 0.0
+#     standard_work_days: int
+#     default_hourly_rate: float = 0.0
+#     status: str = "Active"
+    
+#     # Documents
+#     passport_path: Optional[str] = None
+#     visa_path: Optional[str] = None
+
+#     class Settings:
+#         name = "employees"
+
+# class Site(MemoryNode):
+#     name: Annotated[str, Indexed(unique=True)] # FIX
+#     location: str
+    
+#     manager_uid: Optional[int] = None
+    
+#     description: Optional[str] = None
+#     phone: Optional[str] = None
+
+#     class Settings:
+#         name = "sites"
+
+# class Designation(MemoryNode):
+#     title: Annotated[str, Indexed(unique=True)] # FIX
+    
+#     class Settings:
+#         name = "designations"
+
+# # =============================================================================
+# # 4. THE EVENTS (The Synapses)
+# # =============================================================================
+
+# class Attendance(MemoryNode):
+#     employee_uid: Annotated[int, Indexed()] # FIX: Simple Index (not unique globally)
+#     site_uid: Optional[int] = None
+    
+#     date: str       
+#     status: str     
+    
+#     class Settings:
+#         name = "attendance"
+#         indexes = [
+#             [("employee_uid", 1), ("date", 1)]
+#         ]
+
+# class Schedule(MemoryNode):
+#     employee_uid: Annotated[int, Indexed()] # FIX
+#     site_uid: int
+    
+#     work_date: str
+#     task: str
+#     shift_type: Optional[str] = None
+
+#     class Settings:
+#         name = "schedules"
+#         indexes = [
+#             [("employee_uid", 1), ("work_date", 1)]
+#         ]
