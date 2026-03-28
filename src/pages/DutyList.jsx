@@ -74,11 +74,15 @@ const DutyListPage = () => {
         }
     };
 
-    const refreshAssignedList = async (date = dayjs()) => {
+    const refreshAssignedList = async () => {
         try {
-            const data = await getDutyAssignments(date.format('YYYY-MM-DD'));
-            setAssignedIdsToday((data || []).map(d => d.employee_id));
-        } catch (e) { console.error("Sync error"); }
+            const allEmps = await getEmployees();
+            const assignedIds = (allEmps || [])
+                .filter(emp => emp.manager_id !== null && emp.manager_id !== undefined)
+                .map(emp => emp.id);
+            setAssignedIdsToday(assignedIds);
+            console.log(`✅ ${assignedIds.length} employees have managers assigned`);
+        } catch (e) { console.error("Sync error:", e); }
     };
 
     // --- 2. Filter Logic (This fixes your ReferenceError) ---
@@ -141,7 +145,7 @@ const DutyListPage = () => {
             setIsModalOpen(false);
             setSelectedEmployees([]);
             form.resetFields();
-            refreshAssignedList(values.date);
+            refreshAssignedList();
         } catch (err) { 
             message.error("Deployment failed"); 
         } finally { 
@@ -154,7 +158,7 @@ const DutyListPage = () => {
             await deleteDutyManual(id);
             message.success("Duty removed");
             fetchDutyRecords();
-            refreshAssignedList(viewDate);
+            refreshAssignedList();
         } catch (e) { message.error("Delete failed"); }
     };
 
@@ -213,20 +217,43 @@ const DutyListPage = () => {
                 {filteredEmployees.map(emp => {
                     const isAssigned = assignedIdsToday.includes(emp.id);
                     const isSelected = selectedEmployees.includes(emp.id);
+                    const assignedManager = emp.manager_id 
+                        ? managers.find(m => m.id === emp.manager_id) 
+                        : null;
                     return (
                         <Col key={emp.id} xs={24} sm={12} md={8} lg={6}>
                             <Card 
                                 variant="borderless"
                                 className={`employee-card ${isAssigned ? 'assigned-blur' : ''} ${isSelected ? 'selected-card' : ''}`}
                                 onClick={() => handleSelectEmployee(emp.id)}
-                                style={{ cursor: isAssigned ? 'not-allowed' : 'pointer' }}
+                                style={{ cursor: isAssigned ? 'not-allowed' : 'pointer', position: 'relative' }}
                             >
+                                {assignedManager && (
+                                    <Tag 
+                                        color="blue" 
+                                        style={{ 
+                                            position: 'absolute', 
+                                            top: 8, 
+                                            right: 8,
+                                            fontSize: '11px',
+                                            fontWeight: 'bold',
+                                            zIndex: 1
+                                        }}
+                                        title={`Assigned to ${assignedManager.full_name}`}
+                                    >
+                                        {assignedManager.full_name.charAt(0)}
+                                    </Tag>
+                                )}
                                 <div className="card-inner">
                                     <Avatar size={50} src={emp.image} style={{ backgroundColor: isAssigned ? '#bfbfbf' : '#2a9d8f' }}>{emp.name?.charAt(0)}</Avatar>
                                     <div className="emp-info">
                                         <Text strong>{emp.name}</Text>
                                         <Text type="secondary" style={{fontSize:12}}>{emp.designation}</Text>
-                                        {isAssigned ? <Badge status="error" text="Assigned" /> : <Badge status="success" text="Available" />}
+                                        {isAssigned ? (
+                                            <Badge status="error" text={`Assigned to ${assignedManager?.full_name || 'Manager'}`} />
+                                        ) : (
+                                            <Badge status="success" text="Available" />
+                                        )}
                                     </div>
                                     {!isAssigned && <Checkbox checked={isSelected} className="card-checkbox" />}
                                     {isAssigned && <CheckCircleOutlined style={{color:'#f5222d'}} />}

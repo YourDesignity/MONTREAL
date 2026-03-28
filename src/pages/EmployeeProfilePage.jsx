@@ -25,16 +25,23 @@ const EmployeeProfilePage = () => {
                 setError('');
                 const data = await getEmployeeById(employeeId);
                 setEmployee(data);
+                console.log('✅ Employee profile loaded:', data.name);
             } catch (err) {
-                setError('Failed to fetch employee data. The employee may not exist or an error occurred.');
-                console.error(err);
+                if (err.message?.includes('403') || err.message?.includes('Access Denied')) {
+                    setError('❌ You do not have permission to view this employee.');
+                } else if (err.message?.includes('404')) {
+                    setError('❌ Employee not found.');
+                } else {
+                    setError('❌ Failed to fetch employee data. Please try again.');
+                }
+                console.error('Profile fetch error:', err);
             } finally {
                 setLoading(false);
             }
         };
 
         fetchEmployeeDetails();
-    }, [employeeId]); // This effect re-runs whenever the employeeId in the URL changes.
+    }, [employeeId]);// This effect re-runs whenever the employeeId in the URL changes.
 
     // --- Render conditional UI based on the state ---
 
