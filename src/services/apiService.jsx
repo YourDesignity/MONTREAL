@@ -173,6 +173,7 @@ export const downloadInvoicePDF = async (uid, invNo) => {
 // --- 7. ADMINS & INVENTORY ---
 export const getAdmins = () => fetchWithAuth('/admins/');
 export const createAdmin = (adminData) => fetchWithAuth('/admins/', { method: 'POST', body: JSON.stringify(adminData) });
+export const getManagers = () => fetchWithAuth('/admins/managers');
 
 export const getInventory = () => fetchWithAuth('/inventory/');
 export const addInventoryItem = (data) => fetchWithAuth('/inventory/', { method: 'POST', body: JSON.stringify(data) });
@@ -187,7 +188,7 @@ const apiService = {
     getVehicles, addVehicle, getTrips, startTrip, endTrip, getMaintenanceLogs, addMaintenanceLog, getFuelLogs, addFuelLog, getExpenses, addExpense,
     getContracts, addContract, deleteContract, addProjectExpense,
     getInvoices, createInvoice, payInvoice, downloadInvoicePDF,
-    getAdmins, createAdmin, getInventory, addInventoryItem, deleteInventoryItem
+    getAdmins, createAdmin, getManagers, getInventory, addInventoryItem, deleteInventoryItem
 };
 
 export default apiService;

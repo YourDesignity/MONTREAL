@@ -79,12 +79,13 @@ async def get_all_admins():
 async def get_all_managers(current_user: dict = Depends(get_current_active_user)):
     """
     Returns only admins with role 'Site Manager'.
+    Accessible by SuperAdmin, Admin, AND Site Managers (for duty assignment dropdowns).
     """
     logger.info("ENDPOINT START: GET /admins/managers")
     
     user_role = current_user.get("role")
-    # You might want to move these allowed roles to config in the future too
-    if user_role not in ["SuperAdmin", "Admin"]:
+    # Allow Site Managers to fetch the manager list for duty assignment dropdowns
+    if user_role not in ["SuperAdmin", "Admin", "Site Manager"]:
         logger.warning(f"ACCESS DENIED: Role '{user_role}' tried to fetch managers.")
         raise HTTPException(status_code=403, detail="Forbidden")
 
@@ -106,6 +107,7 @@ async def get_all_managers(current_user: dict = Depends(get_current_active_user)
                 "designation": mgr.designation
             })
 
+        logger.info(f"Returning {len(response_data)} managers to {user_role}")
         return response_data
 
     except Exception as e:
