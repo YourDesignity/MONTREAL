@@ -71,7 +71,7 @@ app.add_middleware(
         "http://localhost:1420", 
         "http://127.0.0.1:1420", 
         "http://localhost:3000",
-        "*" 
+        "http://127.0.0.1:3000",
     ], 
     allow_credentials=True,
     allow_methods=["*"],
@@ -160,11 +160,21 @@ def read_root():
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    await manager.connect(websocket)
+    client_info = f"{websocket.client.host}:{websocket.client.port}" if websocket.client else "Unknown"
+    logger.info(f"WEBSOCKET: Connection attempt from {client_info}")
+
     try:
+        await websocket.accept()
+        await manager.connect(websocket)
+        logger.info(f"WEBSOCKET: Successfully connected {client_info}")
+
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
+        manager.disconnect(websocket)
+        logger.info(f"WEBSOCKET: Client disconnected {client_info}")
+    except Exception as e:
+        logger.error(f"WEBSOCKET ERROR from {client_info}: {e}", exc_info=True)
         manager.disconnect(websocket)
 
 if __name__ == "__main__":

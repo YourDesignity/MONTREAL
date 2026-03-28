@@ -17,9 +17,8 @@ class ConnectionManager:
 
     async def connect(self, websocket: WebSocket):
         """
-        Accepts a new WebSocket connection and logs it.
+        Registers an already-accepted WebSocket connection and logs it.
         """
-        await websocket.accept()
         self.active_connections.append(websocket)
         
         # Extract client info for logs (IP:Port)
