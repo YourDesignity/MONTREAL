@@ -1,0 +1,99 @@
+// src/App.js
+
+import React from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+
+// --- Layout ---
+import Main from './components/layout/Main';
+
+// --- Pages ---
+import LoginPage from './pages/LoginPage';
+import DashboardPage from './components/DashboardPage';
+import EmployeesPage from './pages/EmployeesPage';
+import AttendancePage from './pages/AttendancePage';
+import DutyListPage from './pages/DutyList';
+import AddEmployeePage from './pages/AddEmployee';
+import MessagePage from './pages/MessagePage'; 
+import ProjectsPage from './pages/ProjectsPage'; 
+import InventoryPage from './pages/InventoryPage';
+import SiteManagement from './components/SiteManagement'; 
+import DesignationManagement from './pages/DesignationManagement';
+import AdminManagementPage from './pages/AdminManagementPage';
+import PayslipPage from './pages/PayslipPage';
+import OvertimePage from './pages/OvertimePage';
+import DeductionsPage from './pages/DeductionsPage';
+import VehicleManagementPage from './pages/VehicleManagement'; 
+
+// --- NEW FINANCIAL PAGES ---
+import FinancePage from './pages/FinancePage'; // <--- NEW: Profit & Loss Page
+
+// --- Styles ---
+import "antd/dist/reset.css"; 
+import "./assets/styles/main.css";
+import "./assets/styles/responsive.css";
+
+// Error Boundary to catch crashes
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { hasError: false }; }
+  static getDerivedStateFromError(error) { return { hasError: true }; }
+  render() { 
+    if (this.state.hasError) { 
+      return (
+        <div style={{padding: 50, textAlign: 'center'}}>
+          <h1 style={{color: '#ff4d4f'}}>Financial System Error</h1>
+          <p>The dashboard encountered a crash while fetching data. Please refresh.</p>
+          <button onClick={() => window.location.reload()} style={{padding: '10px 20px', cursor: 'pointer'}}>Refresh Dashboard</button>
+        </div>
+      ); 
+    } 
+    return this.props.children; 
+  }
+}
+
+const App = () => {
+  return (
+    <AuthProvider>
+      <ErrorBoundary>
+        <Routes>
+          {/* Public Route */}
+          <Route path="/login" element={<LoginPage />} />
+
+          {/* Protected Routes (Wrapped in Main Layout) */}
+          <Route element={<Main />}>
+            <Route path="dashboard" element={<DashboardPage />} />
+            
+            {/* HR & Workforce */}
+            <Route path="employees" element={<EmployeesPage />} />
+            <Route path="add-employee" element={<AddEmployeePage />} />
+            <Route path="attendance" element={<AttendancePage />} />
+            <Route path="duty-list" element={<DutyListPage />} />
+            <Route path="payslips" element={<PayslipPage />} />
+            <Route path="overtime" element={<OvertimePage />} />
+            <Route path="deductions" element={ <DeductionsPage />} />
+            
+            {/* Operations */}
+            <Route path="vehicles" element={<VehicleManagementPage />} />
+            <Route path="projects" element={<ProjectsPage />} />
+            <Route path="inventory" element={<InventoryPage />} />
+            <Route path="site-management" element={<SiteManagement />} />
+            <Route path="designations" element={<DesignationManagement />} />
+            
+            {/* --- NEW FINANCIAL INTEL ROUTE --- */}
+            <Route path="finance" element={<FinancePage />} /> {/* <--- ADDED THIS */}
+            
+            {/* Administration */}
+            <Route path="admins" element={<AdminManagementPage />} />
+            <Route path="messages" element={<MessagePage />} />
+          </Route>
+
+          {/* Redirects */}
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </ErrorBoundary>
+    </AuthProvider>
+  );
+};
+
+export default App;

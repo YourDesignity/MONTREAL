@@ -1,0 +1,58 @@
+.finance-container {
+    padding: 24px;
+    background: #f0f2f5;
+    min-height: 100vh;
+}
+
+.finance-header {
+    margin-bottom: 30px;
+}
+
+.fin-stat-card {
+    border-radius: 16px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    transition: 0.3s;
+}
+
+.fin-stat-card:hover { transform: translateY(-5px); }
+
+/* Glow Effects */
+.revenue-glow { border-left: 5px solid #1890ff; }
+.expense-glow { border-left: 5px solid #ff4d4f; }
+.profit-glow { border-left: 5px solid #52c41a; }
+.info-glow { border-left: 5px solid #722ed1; }
+
+.finance-main-card {
+    border-radius: 16px;
+    min-height: 450px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+.audit-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 10px 0;
+}
+
+.audit-icon {
+    width: 45px;
+    height: 45px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: white;
+}
+
+.labor-bg { background: #722ed1; }
+.project-bg { background: #1890ff; }
+.vehicle-bg { background: #fa8c16; }
+
+.audit-info { flex: 1; }
+.audit-value {
+    font-size: 18px;
+    font-weight: 800;
+    color: #1e293b;
+}
