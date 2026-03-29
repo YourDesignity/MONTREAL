@@ -51,7 +51,7 @@ async def create_duty_assignment(assignments: List[schemas.DutyAssignmentCreate]
                 await new_duty.insert()
                 logger.info(f"Created new duty assignment for Employee {item.employee_id}")
 
-        return {"message": "Workforce assigned to Manager successfully"}
+        return {"message": "Duty assigned to employees successfully"}
     except Exception as e:
         logger.error(f"POST Duty Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to save assignments.")

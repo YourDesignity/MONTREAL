@@ -141,7 +141,7 @@ const DutyListPage = () => {
             }));
 
             await saveDutyAssignments(payload);
-            message.success("Workforce assigned to Manager successfully");
+            message.success("Duty assigned to employees successfully");
             setIsModalOpen(false);
             setSelectedEmployees([]);
             form.resetFields();
@@ -170,7 +170,7 @@ const DutyListPage = () => {
                 <Row align="middle" justify="space-between">
                     <Col>
                         <Title level={3} style={{margin:0}}>Workforce Assignment</Title>
-                        <Text type="secondary">Select employees to assign to a Manager's account.</Text>
+                        <Text type="secondary">Select employees to assign duty for the selected period.</Text>
                     </Col>
                     <Col>
                         <Space>
@@ -207,7 +207,7 @@ const DutyListPage = () => {
                             onClick={() => setIsModalOpen(true)} 
                             style={{ background: '#2a9d8f', border: 'none', height: 40, borderRadius: 8 }}
                         >
-                            Assign to Manager ({selectedEmployees.length})
+                            Assign Duty ({selectedEmployees.length})
                         </Button>
                     </Space>
                 </Row>
@@ -264,7 +264,7 @@ const DutyListPage = () => {
                 onOk={handleSubmitAssignment} 
                 onCancel={() => setIsModalOpen(false)} 
                 confirmLoading={isSubmitting}
-                okText="Complete Assignment"
+                okText="Assign Duty"
                 destroyOnHidden
             >
                 <Form form={form} layout="vertical" initialValues={{ dateRange: [dayjs(), dayjs().add(7, 'days')] }}>
