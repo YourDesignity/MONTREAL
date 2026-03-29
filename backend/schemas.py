@@ -11,6 +11,10 @@ class DesignationCreate(DesignationBase):
     pass
 
 class DesignationResponse(DesignationBase):
+    """
+    Designation response schema.
+    Field Mapping: Database ``uid`` → API ``id`` (via validation_alias).
+    """
     id: int = Field(..., validation_alias="uid")
     model_config = ConfigDict(from_attributes=True)
 
@@ -24,9 +28,23 @@ class EmployeeBase(BaseModel):
     status: str
 
 class EmployeePublic(EmployeeBase):
+    """
+    Employee public schema for API responses.
+    Field Mapping: Database ``uid`` → API ``id`` (via validation_alias).
+    Return the model directly or use ``schemas.EmployeePublic.model_validate(obj).model_dump(mode='json')``
+    for manual serialization; do NOT manually build dicts with ``"id": obj.uid``
+    as that bypasses Pydantic and breaks schema validation.
+    """
     model_config = ConfigDict(from_attributes=True)
 
 class EmployeeFull(EmployeeBase):
+    """
+    Full employee schema including financial and document fields.
+    Field Mapping: Database ``uid`` → API ``id`` (via validation_alias).
+    Return the model directly or use ``schemas.EmployeeFull.model_validate(obj).model_dump(mode='json')``
+    for manual serialization; do NOT manually build dicts with ``"id": obj.uid``
+    as that bypasses Pydantic and breaks schema validation.
+    """
     basic_salary: float
     allowance: float
     standard_work_days: int
@@ -72,6 +90,21 @@ class AdminUpdate(BaseModel):
     is_active: Optional[bool] = None
 
 class AdminPublic(BaseModel):
+    """
+    Admin public schema for API responses.
+    Field Mapping: Database ``uid`` → API ``id`` (via validation_alias).
+
+    Usage::
+
+        # ✅ CORRECT – return model directly; FastAPI/Pydantic converts uid → id
+        return admin
+
+        # ✅ CORRECT – explicit conversion
+        return admin.model_dump(by_alias=True)
+
+        # ❌ WRONG – manual dict breaks validation (schema expects 'uid' as input)
+        return {"id": admin.uid, "email": admin.email}
+    """
     id: int = Field(..., validation_alias="uid")
     email: EmailStr
     full_name: Optional[str] = None
@@ -101,6 +134,10 @@ class SiteUpdate(BaseModel):
     is_active: Optional[bool] = None
 
 class SiteResponse(SiteBase):
+    """
+    Site response schema.
+    Field Mapping: Database ``uid`` → API ``id`` (via validation_alias).
+    """
     id: int = Field(..., validation_alias="uid")
     is_active: bool
     model_config = ConfigDict(from_attributes=True)
@@ -117,6 +154,11 @@ class ScheduleCreate(BaseModel):
     shift_type: Optional[str] = None
 
 class ScheduleResponse(BaseModel):
+    """
+    Schedule response schema.
+    Field Mapping: Database ``uid`` → API ``id``, ``employee_uid`` → ``employee_id``,
+    ``site_uid`` → ``site_id`` (all via validation_alias).
+    """
     id: int = Field(..., validation_alias="uid")
     employee_id: int = Field(..., validation_alias="employee_uid")
     site_id: int = Field(..., validation_alias="site_uid")

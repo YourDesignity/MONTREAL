@@ -108,6 +108,17 @@ class Deduction(Document, MemoryNode):
         name = "deductions"
 
 class DutyAssignment(Document):
+    """
+    Duty assignment join table.
+
+    IMPORTANT: Uses ``*_id`` convention (not ``*_uid``) by design:
+    - ``employee_id`` references ``Employee.uid``
+    - ``site_id`` references ``Site.uid``
+    - ``manager_id`` references ``Admin.uid``
+
+    This is intentional. The frontend handles both patterns defensively
+    (``emp.id || emp.uid``). Do NOT change this to ``*_uid`` naming.
+    """
     employee_id: int
     site_id: int
     manager_id: int
