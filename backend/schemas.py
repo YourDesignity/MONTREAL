@@ -11,20 +11,20 @@ class DesignationCreate(DesignationBase):
     pass
 
 class DesignationResponse(DesignationBase):
-    id: int = Field(..., validation_alias="uid")
-    model_config = ConfigDict(from_attributes=True)
+    id: int = Field(..., validation_alias="uid", serialization_alias="id")
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 # =============================================================================
 # 2. EMPLOYEE SCHEMAS
 # =============================================================================
 class EmployeeBase(BaseModel):
-    id: int = Field(..., validation_alias="uid")
+    id: int = Field(..., validation_alias="uid", serialization_alias="id")
     name: str
     designation: str
     status: str
 
 class EmployeePublic(EmployeeBase):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 class EmployeeFull(EmployeeBase):
     basic_salary: float
@@ -34,7 +34,7 @@ class EmployeeFull(EmployeeBase):
     passport_path: Optional[str] = None
     visa_path: Optional[str] = None
     manager_id: Optional[int] = None 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 class EmployeeCreate(BaseModel):
     name: str
@@ -72,12 +72,12 @@ class AdminUpdate(BaseModel):
     is_active: Optional[bool] = None
 
 class AdminPublic(BaseModel):
-    id: int = Field(..., validation_alias="uid")
+    id: int = Field(..., validation_alias="uid", serialization_alias="id")
     email: EmailStr
     full_name: Optional[str] = None
     designation: Optional[str] = None
     role: Optional[str] = None
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 # =============================================================================
 # 4. SITE SCHEMAS
@@ -101,9 +101,9 @@ class SiteUpdate(BaseModel):
     is_active: Optional[bool] = None
 
 class SiteResponse(SiteBase):
-    id: int = Field(..., validation_alias="uid")
+    id: int = Field(..., validation_alias="uid", serialization_alias="id")
     is_active: bool
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 # =============================================================================
 # 5. SCHEDULE SCHEMAS
@@ -117,13 +117,13 @@ class ScheduleCreate(BaseModel):
     shift_type: Optional[str] = None
 
 class ScheduleResponse(BaseModel):
-    id: int = Field(..., validation_alias="uid")
+    id: int = Field(..., validation_alias="uid", serialization_alias="id")
     employee_id: int = Field(..., validation_alias="employee_uid")
     site_id: int = Field(..., validation_alias="site_uid")
     work_date: str
     task: str
     shift_type: Optional[str] = None
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 # =============================================================================
 # 6. ATTENDANCE SCHEMAS

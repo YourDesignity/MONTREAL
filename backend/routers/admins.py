@@ -15,6 +15,7 @@ from backend.utils.logger import setup_logger
 
 # --- NEW: Import the Dynamic Config Loader ---
 from backend.core.config_loader import RoleConfig
+from backend.utils.schema_helpers import models_to_response
 
 router = APIRouter(
     prefix="/admins",
@@ -48,19 +49,13 @@ async def get_all_admins():
             debug_dump = admin.model_dump(mode='json')
             logger.debug(f"RAW ITEM: {json.dumps(debug_dump, indent=None)}") 
 
-            results.append({
-                "id": admin.uid,
-                "email": admin.email,
-                "full_name": admin.full_name,
-                "designation": admin.designation,
-                "is_active": admin.is_active,
-                "created_at": admin.created_at,
-                "role": {
-                    "id": role_id,
-                    "name": admin.role,
-                    "description": "Managed by Config"
-                }
-            })
+            admin_data = schemas.AdminPublic.model_validate(admin).model_dump(by_alias=True, mode='json')
+            admin_data["role"] = {
+                "id": role_id,
+                "name": admin.role,
+                "description": "Managed by Config"
+            }
+            results.append(admin_data)
         
         logger.info(f"RESPONSE: Returning {len(results)} admins.")
         # Log the full response for deep debugging
@@ -97,14 +92,7 @@ async def get_all_managers(current_user: dict = Depends(get_current_active_user)
         raw_dump = [m.model_dump(mode='json') for m in managers]
         logger.debug(f"DB FETCH (Managers):\n{json.dumps(raw_dump, indent=2)}")
         
-        response_data = []
-        for mgr in managers:
-            response_data.append({
-                "uid": mgr.uid, 
-                "email": mgr.email, 
-                "full_name": mgr.full_name, 
-                "designation": mgr.designation
-            })
+        response_data = models_to_response(managers, schemas.AdminPublic)
 
         return response_data
 

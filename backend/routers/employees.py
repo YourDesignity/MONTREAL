@@ -176,8 +176,7 @@ async def create_employee(
         await new_employee.insert()
         
         # Broadcast via WebSocket
-        emp_dict = new_employee.model_dump(mode='json')
-        emp_dict['id'] = new_employee.uid
+        emp_dict = schemas.EmployeeFull.model_validate(new_employee).model_dump(by_alias=True, mode='json')
         await manager.broadcast(json.dumps({"type": "employee_update", "data": emp_dict}))
         
         return new_employee
@@ -213,8 +212,7 @@ async def update_employee(
     await emp.save()
     
     # WebSocket Broadcast
-    emp_dict = emp.model_dump(mode='json')
-    emp_dict['id'] = emp.uid
+    emp_dict = schemas.EmployeeFull.model_validate(emp).model_dump(by_alias=True, mode='json')
     await manager.broadcast(json.dumps({"type": "employee_update", "data": emp_dict}))
     
     return emp
