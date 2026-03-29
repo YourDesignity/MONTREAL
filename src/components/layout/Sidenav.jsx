@@ -33,7 +33,12 @@ function Sidenav({ color }) {
         perm: 'admin:view_all' // Managers do not have this permission
       },
       
-      { path: "/messages", name: "Messages", icon: <MessageOutlined />, perm: 'employee:view_all' },
+      {
+        path: user?.role === 'Manager' ? "/manager-messages" : "/messages",
+        name: user?.role === 'Manager' ? "My Messages" : "Messages",
+        icon: <MessageOutlined />,
+        perm: null,
+      },
       { path: "/admins", name: "Admins", icon: <SafetyCertificateOutlined />, perm: 'admin:view_all' },
       { path: "/site-management", name: "Site Mgmt", icon: <GoldOutlined />, perm: 'admin:view_all' },
     ];

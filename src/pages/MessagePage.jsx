@@ -8,6 +8,7 @@ import {
   TeamOutlined, ReloadOutlined, CommentOutlined, PlusOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -23,7 +24,15 @@ const API_BASE_URL = 'http://localhost:8000';
 const MessagePage = () => {
   const { user } = useAuth();
   const { token } = useToken();
-  
+  const navigate = useNavigate();
+
+  // Redirect managers to their dedicated messages page
+  useEffect(() => {
+    if (user?.role === 'Manager') {
+      navigate('/manager-messages');
+    }
+  }, [user, navigate]);
+
   const [loading, setLoading] = useState(false);
   const [conversations, setConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
