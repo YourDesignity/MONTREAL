@@ -569,3 +569,173 @@ async def get_available_recipients(current_user: dict = Depends(get_current_acti
     logger.info(f"Recipient list requested by {current_user.get('sub')}")
 
     return result
+
+
+# =============================================================================
+# ENDPOINT: SEND PRIVATE MESSAGE (PHASE 3)
+# =============================================================================
+
+@router.post("/private/{recipient_id}", status_code=status.HTTP_201_CREATED)
+async def send_private_message(
+    recipient_id: int,
+    content: str,
+    current_user: dict = Depends(get_current_active_user)
+):
+    """
+    Send a private message to a specific user (or start a private conversation).
+
+    - Admins can message anyone
+    - Managers/Employees can message Admins
+    - Managers CANNOT message other managers
+    - Employees CANNOT message other employees
+
+    If a conversation already exists between these two users, the message is added to it.
+    Otherwise, a new private conversation is created.
+
+    Phase 3 Implementation.
+    """
+
+    # =========================================================================
+    # 1. GET SENDER INFO
+    # =========================================================================
+
+    me_admin = await Admin.find_one(Admin.email == current_user.get("sub"))
+    me_employee = None
+
+    if me_admin:
+        sender_id = me_admin.uid
+        sender_name = me_admin.full_name
+        sender_role = me_admin.role
+        sender_type = "admin" if me_admin.role in ["SuperAdmin", "Admin"] else "manager"
+    else:
+        # Check if sender is employee
+        me_employee = await Employee.find_one(Employee.uid == current_user.get("uid"))
+        if not me_employee:
+            raise HTTPException(404, "User profile not found")
+        sender_id = me_employee.uid
+        sender_name = me_employee.name
+        sender_role = "Employee"
+        sender_type = "employee"
+
+    # =========================================================================
+    # 2. GET RECIPIENT INFO
+    # =========================================================================
+
+    recipient_admin = await Admin.find_one(Admin.uid == recipient_id)
+    recipient_employee = None
+
+    if recipient_admin:
+        recipient_name = recipient_admin.full_name
+        recipient_role = recipient_admin.role
+        recipient_type = "admin" if recipient_admin.role in ["SuperAdmin", "Admin"] else "manager"
+    else:
+        recipient_employee = await Employee.find_one(Employee.uid == recipient_id)
+        if not recipient_employee:
+            raise HTTPException(404, "Recipient not found")
+        recipient_name = recipient_employee.name
+        recipient_role = "Employee"
+        recipient_type = "employee"
+
+    # =========================================================================
+    # 3. PERMISSION CHECKS (CRITICAL SECURITY)
+    # =========================================================================
+
+    # Rule 1: Cannot message yourself
+    if sender_id == recipient_id:
+        raise HTTPException(400, "Cannot send messages to yourself")
+
+    # Rule 2: Managers cannot message other managers
+    if sender_type == "manager" and recipient_type == "manager":
+        raise HTTPException(403, "Managers cannot send private messages to other managers")
+
+    # Rule 3: Employees cannot message other employees
+    if sender_type == "employee" and recipient_type == "employee":
+        raise HTTPException(403, "Employees cannot send private messages to other employees")
+
+    # Rule 4: Managers can only message admins (not employees)
+    if sender_type == "manager" and recipient_type == "employee":
+        raise HTTPException(403, "Managers can only message Admins, not employees")
+
+    # Rule 5: Employees can only message admins (not managers)
+    if sender_type == "employee" and recipient_type == "manager":
+        raise HTTPException(403, "Employees can only message Admins, not managers")
+
+    # =========================================================================
+    # 4. CHECK IF CONVERSATION ALREADY EXISTS (BIDIRECTIONAL)
+    # =========================================================================
+
+    # Search for existing private conversation between these two users
+    # Filter by both participant IDs in the DB query, then verify exact 1-on-1 size
+    existing_conversations = await Conversation.find(
+        Conversation.conversation_type == "private",
+        Conversation.participant_ids == sender_id,
+        Conversation.participant_ids == recipient_id,
+    ).to_list()
+
+    existing_conv = None
+    for conv in existing_conversations:
+        # Confirm it is a strict 1-on-1 thread (no extra participants)
+        if len(conv.participant_ids) == 2:
+            existing_conv = conv
+            break
+
+    # =========================================================================
+    # 5. ADD MESSAGE TO EXISTING CONVERSATION OR CREATE NEW ONE
+    # =========================================================================
+
+    if existing_conv:
+        # Add message to existing conversation
+        await add_message_to_conversation(
+            conversation_id=existing_conv.uid,
+            sender_id=sender_id,
+            sender_name=sender_name,
+            sender_role=sender_role,
+            sender_type=sender_type,
+            content=content
+        )
+
+        logger.info(f"Private message added to existing conversation {existing_conv.uid} by {sender_name}")
+
+        return {
+            "message": "Message sent",
+            "conversation_id": existing_conv.uid,
+            "is_new_conversation": False,
+            "recipient_name": recipient_name
+        }
+
+    # Create new private conversation
+    # Title shows the OTHER person's name (from each user's perspective)
+    if sender_type == "admin":
+        # Admin's view: "Chat with Manager John" or "Chat with Employee Sarah"
+        title = f"💬 Chat with {recipient_name}"
+    else:
+        # Manager/Employee's view: "Chat with Admin"
+        title = f"💬 Chat with Admin"
+
+    conv = await create_conversation(
+        conversation_type="private",
+        created_by_id=sender_id,
+        created_by_name=sender_name,
+        created_by_role=sender_role,
+        participant_ids=[sender_id, recipient_id],
+        participant_names=[sender_name, recipient_name],
+        title=title
+    )
+
+    await add_message_to_conversation(
+        conversation_id=conv.uid,
+        sender_id=sender_id,
+        sender_name=sender_name,
+        sender_role=sender_role,
+        sender_type=sender_type,
+        content=content
+    )
+
+    logger.info(f"New private conversation {conv.uid} created: {sender_name} → {recipient_name}")
+
+    return {
+        "message": "Private conversation started",
+        "conversation_id": conv.uid,
+        "is_new_conversation": True,
+        "recipient_name": recipient_name
+    }
