@@ -97,16 +97,8 @@ async def get_all_managers(current_user: dict = Depends(get_current_active_user)
         raw_dump = [m.model_dump(mode='json') for m in managers]
         logger.debug(f"DB FETCH (Managers):\n{json.dumps(raw_dump, indent=2)}")
         
-        response_data = []
-        for mgr in managers:
-            response_data.append({
-                "uid": mgr.uid, 
-                "email": mgr.email, 
-                "full_name": mgr.full_name, 
-                "designation": mgr.designation
-            })
-
-        return response_data
+        # Return models directly - Pydantic handles uid → id conversion via validation_alias
+        return managers
 
     except Exception as e:
         logger.error(f"ERROR in GET /managers: {e}")
