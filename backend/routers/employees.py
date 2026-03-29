@@ -137,11 +137,18 @@ async def create_employee(
     standard_work_days: int = Form(...),
     passport_file: UploadFile = File(...),
     visa_file: UploadFile = File(...),
+    manager_id: Optional[int] = Form(None),
     current_user: dict = Depends(get_current_active_user)
 ):
     # Only High-level admins can add new employees to the system
     if current_user.get("role") not in ["SuperAdmin", "Admin"]:
         raise HTTPException(status_code=403, detail="Only Admins can create new employee records.")
+
+    # Validate manager exists and has the correct role if provided
+    if manager_id is not None:
+        manager = await Admin.find_one(Admin.uid == manager_id)
+        if not manager or manager.role != "Site Manager":
+            raise HTTPException(status_code=400, detail="Invalid manager ID: must be an active Site Manager.")
 
     try:
         # File pathing
@@ -162,7 +169,8 @@ async def create_employee(
             passport_path=passport_path,
             visa_path=visa_path,
             status="Active",
-            allowance=0.0
+            allowance=0.0,
+            manager_id=manager_id
         )
         
         await new_employee.insert()
