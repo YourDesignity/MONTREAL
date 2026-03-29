@@ -144,8 +144,9 @@ class AttendanceUpdateBatch(BaseModel):
 class DutyAssignmentCreate(BaseModel):
     employee_id: int
     site_id: int
-    date: str
-    manager_id: int 
+    manager_id: int
+    start_date: str
+    end_date: str
 
 # =============================================================================
 # 8. PAYSLIP / FINANCIAL SCHEMAS

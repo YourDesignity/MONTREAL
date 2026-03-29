@@ -166,6 +166,9 @@ async def websocket_endpoint(websocket: WebSocket):
             await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+    except Exception:
+        # Handle abrupt disconnections that don't raise WebSocketDisconnect
+        manager.disconnect(websocket)
 
 if __name__ == "__main__":
     import uvicorn

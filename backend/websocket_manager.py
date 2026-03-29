@@ -42,20 +42,24 @@ class ConnectionManager:
         """
         Sends a message to all connected clients.
         Logs the payload size and success count.
+        Dead connections are removed automatically on send failure.
         """
         if not self.active_connections:
-            logger.debug(f"WS BROADCAST ABORTED: No active clients to receive: '{message[:50]}...'")
+            logger.debug(f"WS BROADCAST ABORTED: No active clients to receive.")
             return
 
-        # Log payload preview (first 100 chars) to avoid flooding logs
-        logger.debug(f"WS BROADCASTING: To {len(self.active_connections)} clients. Payload: '{message[:100]}...'")
+        logger.debug(f"WS BROADCASTING: To {len(self.active_connections)} clients. Payload: '{message[:100]}'")
 
-        for connection in self.active_connections:
+        dead_connections = []
+        for connection in list(self.active_connections):
             try:
                 await connection.send_text(message)
             except Exception as e:
-                # If sending fails, log it (client might have dropped silently)
                 logger.error(f"WS SEND ERROR: Failed to send to a client. Reason: {e}")
+                dead_connections.append(connection)
+
+        for connection in dead_connections:
+            self.disconnect(connection)
 
 # Create the single, global instance that the rest of our application will import and use.
 manager = ConnectionManager()

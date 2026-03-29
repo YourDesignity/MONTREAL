@@ -17,6 +17,7 @@ import {
 
 const { Title, Text } = Typography;
 const { Option } = Select;
+const { RangePicker } = DatePicker;
 
 // Fallback for direct deletion
 const deleteDutyManual = async (id) => {
@@ -89,6 +90,11 @@ const DutyListPage = () => {
         );
     }, [employees, searchTerm]);
 
+    // O(1) manager lookup map
+    const managerMap = useMemo(() => {
+        return new Map(managers.map(m => [m.id, m]));
+    }, [managers]);
+
     // --- 3. Duty List View Logic ---
     const fetchDutyRecords = async () => {
         try {
@@ -98,13 +104,15 @@ const DutyListPage = () => {
             const mappedData = (data || []).map((record) => {
                 const emp = employees.find(e => e.id === record.employee_id);
                 const site = sites.find(s => s.id === record.site_id);
-                const mgr = managers.find(m => m.id === record.manager_id);
+                const mgr = managerMap.get(record.manager_id);
                 return {
                     id: record._id || record.id,
                     employee_name: emp ? emp.name : 'Unknown',
                     designation: emp ? emp.designation : '-',
                     site_name: site ? site.name : 'Unknown',
-                    manager_name: mgr ? mgr.full_name : 'Assigned Manager'
+                    manager_name: mgr ? mgr.full_name : 'Assigned Manager',
+                    start_date: record.start_date,
+                    end_date: record.end_date
                 };
             });
             setDutyListRecords(mappedData);
@@ -133,7 +141,8 @@ const DutyListPage = () => {
                 employee_id: eid, 
                 site_id: parseInt(values.site_id), 
                 manager_id: parseInt(values.manager_id),
-                date: values.date.format('YYYY-MM-DD') 
+                start_date: values.dateRange[0].format('YYYY-MM-DD'),
+                end_date: values.dateRange[1].format('YYYY-MM-DD')
             }));
 
             await saveDutyAssignments(payload);
@@ -141,7 +150,7 @@ const DutyListPage = () => {
             setIsModalOpen(false);
             setSelectedEmployees([]);
             form.resetFields();
-            refreshAssignedList(values.date);
+            refreshAssignedList();
         } catch (err) { 
             message.error("Deployment failed"); 
         } finally { 
@@ -213,14 +222,30 @@ const DutyListPage = () => {
                 {filteredEmployees.map(emp => {
                     const isAssigned = assignedIdsToday.includes(emp.id);
                     const isSelected = selectedEmployees.includes(emp.id);
+                    const assignedManager = emp.manager_id ? managerMap.get(emp.manager_id) : null;
                     return (
                         <Col key={emp.id} xs={24} sm={12} md={8} lg={6}>
                             <Card 
                                 variant="borderless"
                                 className={`employee-card ${isAssigned ? 'assigned-blur' : ''} ${isSelected ? 'selected-card' : ''}`}
                                 onClick={() => handleSelectEmployee(emp.id)}
-                                style={{ cursor: isAssigned ? 'not-allowed' : 'pointer' }}
+                                style={{ cursor: isAssigned ? 'not-allowed' : 'pointer', position: 'relative' }}
                             >
+                                {assignedManager && (
+                                    <Tag
+                                        color="blue"
+                                        style={{
+                                            position: 'absolute',
+                                            top: 8,
+                                            right: 8,
+                                            fontSize: '11px',
+                                            fontWeight: 'bold',
+                                            zIndex: 1
+                                        }}
+                                    >
+                                        {assignedManager.full_name.charAt(0)}
+                                    </Tag>
+                                )}
                                 <div className="card-inner">
                                     <Avatar size={50} src={emp.image} style={{ backgroundColor: isAssigned ? '#bfbfbf' : '#2a9d8f' }}>{emp.name?.charAt(0)}</Avatar>
                                     <div className="emp-info">
@@ -247,7 +272,7 @@ const DutyListPage = () => {
                 okText="Complete Assignment"
                 destroyOnClose={true}
             >
-                <Form form={form} layout="vertical" initialValues={{ date: dayjs() }}>
+                <Form form={form} layout="vertical" initialValues={{ dateRange: [dayjs(), dayjs().add(7, 'days')] }}>
                     <Form.Item 
                         name="manager_id" 
                         label="Responsible Manager" 
@@ -266,8 +291,16 @@ const DutyListPage = () => {
                         </Select>
                     </Form.Item>
 
-                    <Form.Item name="date" label="Assignment Date" rules={[{ required: true }]}>
-                        <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+                    <Form.Item
+                        name="dateRange"
+                        label="Assignment Period"
+                        rules={[{ required: true, message: 'Select start and end dates' }]}
+                    >
+                        <RangePicker
+                            style={{ width: '100%' }}
+                            format="DD/MM/YYYY"
+                            placeholder={['Start Date', 'End Date']}
+                        />
                     </Form.Item>
                 </Form>
             </Modal>
@@ -282,6 +315,8 @@ const DutyListPage = () => {
                         { title: 'Employee', dataIndex: 'employee_name' },
                         { title: 'Location', dataIndex: 'site_name', render: t => <Tag color="blue">{t}</Tag> },
                         { title: 'Manager', dataIndex: 'manager_name', render: t => <Tag color="green">{t}</Tag> },
+                        { title: 'Start Date', dataIndex: 'start_date' },
+                        { title: 'End Date', dataIndex: 'end_date' },
                         { title: 'Action', render: (_, r) => (
                             <Popconfirm title="Remove assignment?" onConfirm={() => handleDeleteDuty(r.id)}>
                                 <Button type="text" danger icon={<DeleteOutlined />} />

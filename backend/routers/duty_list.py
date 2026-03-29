@@ -2,7 +2,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
 from backend import schemas
-from backend.models import DutyAssignment, Admin
+from backend.models import DutyAssignment, Admin, Employee
 from backend.security import get_current_active_user
 from backend.utils.logger import setup_logger 
 
@@ -19,30 +19,41 @@ async def create_duty_assignment(assignments: List[schemas.DutyAssignmentCreate]
     if current_user.get("role") not in ["SuperAdmin", "Admin"]:
         raise HTTPException(status_code=403, detail="Only Admins can assign workforce duties.")
 
-    created_records = []
     try:
         for item in assignments:
-            # Check for existing assignment to prevent duplicates
+            # Update the employee's permanent manager_id
+            employee = await Employee.find_one(Employee.uid == item.employee_id)
+            if employee:
+                employee.manager_id = item.manager_id
+                await employee.save()
+                logger.info(f"Employee {item.employee_id} permanently assigned to Manager {item.manager_id}")
+
+            # Upsert duty assignment (one active assignment per employee)
             existing = await DutyAssignment.find_one(
-                DutyAssignment.employee_id == item.employee_id, 
-                DutyAssignment.date == item.date
+                DutyAssignment.employee_id == item.employee_id
             )
-            
+
             if existing:
                 existing.site_id = item.site_id
                 existing.manager_id = item.manager_id
+                existing.start_date = item.start_date
+                existing.end_date = item.end_date
                 await existing.save()
+                logger.info(f"Updated duty assignment for Employee {item.employee_id}")
             else:
                 new_duty = DutyAssignment(
-                    employee_id=item.employee_id, 
-                    site_id=item.site_id, 
-                    manager_id=item.manager_id, 
-                    date=item.date
+                    employee_id=item.employee_id,
+                    site_id=item.site_id,
+                    manager_id=item.manager_id,
+                    start_date=item.start_date,
+                    end_date=item.end_date
                 )
                 await new_duty.insert()
-        return {"message": "Duty assignments saved successfully"}
+                logger.info(f"Created new duty assignment for Employee {item.employee_id}")
+
+        return {"message": "Workforce assigned to Manager successfully"}
     except Exception as e:
-        logger.error(f"POST Duty Error: {e}")
+        logger.error(f"POST Duty Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to save assignments.")
 
 @router.get("/{date}")
@@ -50,26 +61,27 @@ async def get_duty_list_by_date(date: str, current_user: dict = Depends(get_curr
     try:
         user_role = current_user.get("role")
         user_email = current_user.get("sub")
-        
-        # 1. Fetch the Admin profile safely
+
         me = await Admin.find_one(Admin.email == user_email)
-        
-        # 2. If it's an Owner, show all assignments for that date
+
         if user_role in ["SuperAdmin", "Admin"]:
-            return await DutyAssignment.find(DutyAssignment.date == date).to_list()
-        
-        # 3. If it's a Manager, filter by their UID
+            # Return all assignments active on this date
+            return await DutyAssignment.find(
+                DutyAssignment.start_date <= date,
+                DutyAssignment.end_date >= date
+            ).to_list()
+
         if not me:
-            # Fallback if the user is a manager but not in Admin table
             return []
 
+        # Return manager's assignments active on this date
         return await DutyAssignment.find(
-            DutyAssignment.date == date, 
-            DutyAssignment.manager_id == me.uid
+            DutyAssignment.manager_id == me.uid,
+            DutyAssignment.start_date <= date,
+            DutyAssignment.end_date >= date
         ).to_list()
     except Exception as e:
         logger.error(f"GET Duty Error: {e}")
-        # Return empty list instead of crashing with 500
         return []
 
 @router.delete("/{id}")
