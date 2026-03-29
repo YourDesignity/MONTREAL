@@ -26,7 +26,13 @@ const EmployeeProfilePage = () => {
                 const data = await getEmployeeById(employeeId);
                 setEmployee(data);
             } catch (err) {
-                setError('Failed to fetch employee data. The employee may not exist or an error occurred.');
+                if (err.message?.includes('403') || err.message?.includes('Forbidden')) {
+                    setError("You don't have permission to view this employee's profile.");
+                } else if (err.message?.includes('404') || err.message?.includes('not found')) {
+                    setError("Employee not found.");
+                } else {
+                    setError('Failed to fetch employee data. The employee may not exist or an error occurred.');
+                }
                 console.error(err);
             } finally {
                 setLoading(false);
