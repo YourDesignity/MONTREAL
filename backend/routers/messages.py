@@ -237,11 +237,11 @@ async def broadcast_to_employees(
     if not me:
         raise HTTPException(status_code=404, detail="Admin profile not found")
 
-    admins = await Admin.find(Admin.is_active == True).to_list()
     employees = await Employee.find(Employee.is_active == True).to_list()
 
-    participant_ids = [a.uid for a in admins] + [e.uid for e in employees]
-    participant_names = [a.full_name for a in admins] + [e.name for e in employees]
+    # Include admin in conversation so they can see replies
+    participant_ids = [me.uid] + [e.uid for e in employees]
+    participant_names = [me.full_name] + [e.name for e in employees]
 
     conv = await create_conversation(
         conversation_type="broadcast_employees",
@@ -250,7 +250,7 @@ async def broadcast_to_employees(
         created_by_role=me.role,
         participant_ids=participant_ids,
         participant_names=participant_names,
-        title="📢 Broadcast: Employees",
+        title="👨‍🔧 Broadcast: Employees Only",
     )
 
     await add_message_to_conversation(
@@ -262,7 +262,7 @@ async def broadcast_to_employees(
         content=content,
     )
 
-    return {"message": "Broadcast sent to employees", "conversation_id": conv.uid}
+    return {"message": "Broadcast sent to all employees", "conversation_id": conv.uid}
 
 
 # =============================================================================
@@ -514,3 +514,58 @@ async def reply_to_conversation(
     )
 
     return {"message": "Reply sent"}
+
+
+# =============================================================================
+# ENDPOINT 9: GET AVAILABLE RECIPIENTS (PHASE 2)
+# =============================================================================
+
+@router.get("/recipients")
+async def get_available_recipients(current_user: dict = Depends(get_current_active_user)):
+    """
+    Get list of users who can receive messages.
+
+    Used by frontend to populate recipient selection UI.
+    Only accessible by Admins.
+    """
+    if current_user.get("role") not in ["SuperAdmin", "Admin"]:
+        raise HTTPException(status_code=403, detail="Only Admins can access recipient list")
+
+    managers, employees, admins = await asyncio.gather(
+        Admin.find(Admin.is_active == True, Admin.role == "Site Manager").to_list(),
+        Employee.find(Employee.is_active == True).to_list(),
+        Admin.find(Admin.is_active == True, Admin.role.in_(["SuperAdmin", "Admin"])).to_list(),
+    )
+
+    result = {
+        "managers": [
+            {
+                "id": a.uid,
+                "name": a.full_name,
+                "role": a.role,
+                "email": a.email,
+            }
+            for a in managers
+        ],
+        "employees": [
+            {
+                "id": e.uid,
+                "name": e.name,
+                "designation": e.designation,
+            }
+            for e in employees
+        ],
+        "admins": [
+            {
+                "id": a.uid,
+                "name": a.full_name,
+                "role": a.role,
+                "email": a.email,
+            }
+            for a in admins
+        ],
+    }
+
+    logger.info(f"Recipient list requested by {current_user.get('sub')}")
+
+    return result
