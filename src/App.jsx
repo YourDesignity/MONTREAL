@@ -14,7 +14,8 @@ import EmployeesPage from './pages/EmployeesPage';
 import AttendancePage from './pages/AttendancePage';
 import DutyListPage from './pages/DutyList';
 import AddEmployeePage from './pages/AddEmployee';
-import MessagePage from './pages/MessagePage'; 
+import MessagePage from './pages/MessagePage';
+import ManagerMessagesPage from './pages/ManagerMessagesPage';
 import ProjectsPage from './pages/ProjectsPage'; 
 import InventoryPage from './pages/InventoryPage';
 import SiteManagement from './components/SiteManagement'; 
@@ -85,6 +86,7 @@ const App = () => {
             {/* Administration */}
             <Route path="admins" element={<AdminManagementPage />} />
             <Route path="messages" element={<MessagePage />} />
+            <Route path="manager-messages" element={<ManagerMessagesPage />} />
           </Route>
 
           {/* Redirects */}
