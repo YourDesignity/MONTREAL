@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Card, List, Avatar, Button, Input, Tag, Typography, Space, 
-  message, theme, Row, Col, Spin, Badge, Empty 
+  message, theme, Row, Col, Spin, Badge, Empty, Modal, Checkbox, Divider, Select
 } from 'antd';
 import { 
   SendOutlined, UserOutlined, GlobalOutlined, MessageFilled,
-  TeamOutlined, ReloadOutlined, CommentOutlined
+  TeamOutlined, ReloadOutlined, CommentOutlined, PlusOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
@@ -30,6 +30,16 @@ const MessagePage = () => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [sendingReply, setSendingReply] = useState(false);
+
+  const [isNewMessageModalOpen, setIsNewMessageModalOpen] = useState(false);
+  const [messageType, setMessageType] = useState("broadcast_all");
+  const [selectedRecipients, setSelectedRecipients] = useState([]);
+  const [recipients, setRecipients] = useState({ managers: [], employees: [], admins: [] });
+  const [privateRecipientId, setPrivateRecipientId] = useState(null);
+  const [modalMessage, setModalMessage] = useState("");
+  const [sendingMessage, setSendingMessage] = useState(false);
+
+  const isAdmin = user?.role === 'SuperAdmin' || user?.role === 'Admin';
 
   // Ref to always have the latest selectedConversation inside the polling interval
   const selectedConversationRef = useRef(null);
@@ -60,8 +70,7 @@ const MessagePage = () => {
     }
   };
 
-  const loadMessages = async (conversationId) => {
-    try {
+  const loadMessages = async (conversationId) => {    try {
       const res = await axios.get(`${API_BASE_URL}/messages/${conversationId}/messages`, getAuthHeaders());
       setMessages(res.data);
       
@@ -79,9 +88,20 @@ const MessagePage = () => {
     }
   };
 
+  const loadRecipients = async () => {
+    if (!isAdmin) return;
+    try {
+      const res = await axios.get(`${API_BASE_URL}/messages/recipients`, getAuthHeaders());
+      setRecipients(res.data);
+    } catch (err) {
+      console.error("Failed to load recipients", err);
+    }
+  };
+
   // Initial load
   useEffect(() => {
     loadConversations();
+    if (isAdmin) loadRecipients();
     
     // Poll for new messages every 5 seconds using ref so interval always has latest value
     const interval = setInterval(() => {
@@ -139,6 +159,66 @@ const MessagePage = () => {
     }
   };
 
+  const handleSendNewMessage = async () => {
+    if (!modalMessage.trim()) {
+      message.warning("Please type a message");
+      return;
+    }
+
+    try {
+      setSendingMessage(true);
+      
+      let endpoint = "";
+
+      if (messageType === "broadcast_all") {
+        endpoint = "/messages/broadcast/all";
+      } else if (messageType === "broadcast_managers") {
+        endpoint = "/messages/broadcast/managers";
+      } else if (messageType === "broadcast_employees") {
+        endpoint = "/messages/broadcast/employees";
+      } else if (messageType === "custom") {
+        if (selectedRecipients.length === 0) {
+          message.warning("Please select at least one recipient");
+          setSendingMessage(false);
+          return;
+        }
+        endpoint = "/messages/broadcast/custom";
+      } else if (messageType === "private") {
+        if (!privateRecipientId) {
+          message.warning("Please select a recipient");
+          setSendingMessage(false);
+          return;
+        }
+        endpoint = `/messages/private/${privateRecipientId}`;
+      }
+
+      if (messageType === "custom") {
+        await axios.post(`${API_BASE_URL}${endpoint}`, { content: modalMessage, recipient_ids: selectedRecipients }, getAuthHeaders());
+      } else {
+        await axios.post(`${API_BASE_URL}${endpoint}`, null, {
+          ...getAuthHeaders(),
+          params: { content: modalMessage }
+        });
+      }
+      
+      message.success("Message sent successfully!");
+      
+      setModalMessage("");
+      setIsNewMessageModalOpen(false);
+      setSelectedRecipients([]);
+      setPrivateRecipientId(null);
+      setMessageType("broadcast_all");
+      
+      await loadConversations();
+      
+    } catch (err) {
+      message.error(err.response?.data?.detail || "Failed to send message");
+      console.error(err);
+    } finally {
+      setSendingMessage(false);
+    }
+  };
+
   // =============================================================================
   // UI HELPERS
   // =============================================================================
@@ -192,16 +272,27 @@ const MessagePage = () => {
             <Text type="secondary">Team communication and broadcasts</Text>
           </Col>
           <Col>
-            <Button 
-              icon={<ReloadOutlined />} 
-              onClick={() => {
-                loadConversations();
-                if (selectedConversation) loadMessages(selectedConversation.id);
-              }}
-              loading={loading}
-            >
-              Refresh
-            </Button>
+            <Space>
+              <Button 
+                icon={<ReloadOutlined />} 
+                onClick={() => {
+                  loadConversations();
+                  if (selectedConversation) loadMessages(selectedConversation.id);
+                }}
+                loading={loading}
+              >
+                Refresh
+              </Button>
+              {isAdmin && (
+                <Button 
+                  type="primary" 
+                  icon={<PlusOutlined />}
+                  onClick={() => setIsNewMessageModalOpen(true)}
+                >
+                  New Message
+                </Button>
+              )}
+            </Space>
           </Col>
         </Row>
       </Card>
@@ -469,6 +560,261 @@ const MessagePage = () => {
           </Card>
         </Col>
       </Row>
+
+      {/* NEW MESSAGE MODAL (ADMIN ONLY) */}
+      <Modal
+        title={
+          <Space>
+            <MessageFilled style={{ color: '#1890ff' }} />
+            <span>New Message</span>
+          </Space>
+        }
+        open={isNewMessageModalOpen}
+        onCancel={() => {
+          setIsNewMessageModalOpen(false);
+          setModalMessage("");
+          setSelectedRecipients([]);
+          setPrivateRecipientId(null);
+          setMessageType("broadcast_all");
+        }}
+        onOk={handleSendNewMessage}
+        okText="Send Message"
+        confirmLoading={sendingMessage}
+        width={700}
+        okButtonProps={{ disabled: !modalMessage.trim() }}
+      >
+        <Space direction="vertical" style={{ width: '100%' }} size="large">
+          
+          {/* MESSAGE TYPE SELECTOR */}
+          <div>
+            <Text strong>Message Type:</Text>
+            <Select
+              value={messageType}
+              onChange={(val) => {
+                setMessageType(val);
+                setSelectedRecipients([]);
+                setPrivateRecipientId(null);
+              }}
+              style={{ width: '100%', marginTop: 8 }}
+              size="large"
+            >
+              <Select.Option value="broadcast_all">
+                <Space>
+                  <GlobalOutlined style={{ color: '#1890ff' }} />
+                  <span>Broadcast to Everyone</span>
+                </Space>
+              </Select.Option>
+              <Select.Option value="broadcast_managers">
+                <Space>
+                  <TeamOutlined style={{ color: '#52c41a' }} />
+                  <span>Broadcast to Managers Only</span>
+                </Space>
+              </Select.Option>
+              <Select.Option value="broadcast_employees">
+                <Space>
+                  <UserOutlined style={{ color: '#fa8c16' }} />
+                  <span>Broadcast to Employees Only</span>
+                </Space>
+              </Select.Option>
+              <Select.Option value="custom">
+                <Space>
+                  <MessageFilled style={{ color: '#722ed1' }} />
+                  <span>Custom Recipients (Select Multiple)</span>
+                </Space>
+              </Select.Option>
+              <Select.Option value="private">
+                <Space>
+                  <CommentOutlined style={{ color: '#eb2f96' }} />
+                  <span>Private Message (One Person)</span>
+                </Space>
+              </Select.Option>
+            </Select>
+          </div>
+
+          {/* CUSTOM RECIPIENT SELECTOR */}
+          {messageType === "custom" && (
+            <div>
+              <Text strong>Select Recipients:</Text>
+              <Divider style={{ margin: '8px 0' }} />
+              
+              <Row gutter={[16, 16]}>
+                {recipients.managers && recipients.managers.length > 0 && (
+                  <Col span={12}>
+                    <div style={{ 
+                      border: '1px solid #f0f0f0', 
+                      borderRadius: 8, 
+                      padding: 12,
+                      backgroundColor: '#fafafa'
+                    }}>
+                      <Text type="secondary" strong style={{ display: 'block', marginBottom: 8 }}>
+                        Managers ({recipients.managers.length}):
+                      </Text>
+                      <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+                        {recipients.managers.map(mgr => (
+                          <div key={mgr.id} style={{ marginBottom: 8 }}>
+                            <Checkbox
+                              checked={selectedRecipients.includes(mgr.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedRecipients(prev => [...prev, mgr.id]);
+                                } else {
+                                  setSelectedRecipients(prev => prev.filter(id => id !== mgr.id));
+                                }
+                              }}
+                            >
+                              <Space size={4}>
+                                <Text style={{ fontSize: 13 }}>{mgr.name}</Text>
+                                <Tag color="green" style={{ fontSize: 10, margin: 0 }}>
+                                  {mgr.role}
+                                </Tag>
+                              </Space>
+                            </Checkbox>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </Col>
+                )}
+
+                {recipients.employees && recipients.employees.length > 0 && (
+                  <Col span={12}>
+                    <div style={{ 
+                      border: '1px solid #f0f0f0', 
+                      borderRadius: 8, 
+                      padding: 12,
+                      backgroundColor: '#fafafa'
+                    }}>
+                      <Text type="secondary" strong style={{ display: 'block', marginBottom: 8 }}>
+                        Employees ({recipients.employees.length}):
+                      </Text>
+                      <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+                        {recipients.employees.map(emp => (
+                          <div key={emp.id} style={{ marginBottom: 8 }}>
+                            <Checkbox
+                              checked={selectedRecipients.includes(emp.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedRecipients(prev => [...prev, emp.id]);
+                                } else {
+                                  setSelectedRecipients(prev => prev.filter(id => id !== emp.id));
+                                }
+                              }}
+                            >
+                              <Space size={4}>
+                                <Text style={{ fontSize: 13 }}>{emp.name}</Text>
+                                <Tag color="blue" style={{ fontSize: 10, margin: 0 }}>
+                                  {emp.designation}
+                                </Tag>
+                              </Space>
+                            </Checkbox>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </Col>
+                )}
+              </Row>
+
+              <div style={{ marginTop: 12, padding: 8, backgroundColor: '#e6f7ff', borderRadius: 4 }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  ✓ Selected: <Text strong>{selectedRecipients.length}</Text> {selectedRecipients.length === 1 ? 'person' : 'people'}
+                </Text>
+              </div>
+            </div>
+          )}
+
+          {/* PRIVATE RECIPIENT SELECTOR */}
+          {messageType === "private" && (
+            <div>
+              <Text strong>Send Private Message To:</Text>
+              <Select
+                placeholder="Select a person..."
+                value={privateRecipientId}
+                onChange={setPrivateRecipientId}
+                style={{ width: '100%', marginTop: 8 }}
+                size="large"
+                showSearch
+                filterOption={(input, option) => {
+                  const label = option.children;
+                  if (typeof label === 'string') {
+                    return label.toLowerCase().includes(input.toLowerCase());
+                  }
+                  return false;
+                }}
+              >
+                {recipients.managers && recipients.managers.length > 0 && (
+                  <Select.OptGroup label="Managers">
+                    {recipients.managers.map(mgr => (
+                      <Select.Option key={mgr.id} value={mgr.id}>
+                        {mgr.name} ({mgr.role})
+                      </Select.Option>
+                    ))}
+                  </Select.OptGroup>
+                )}
+
+                {recipients.employees && recipients.employees.length > 0 && (
+                  <Select.OptGroup label="Employees">
+                    {recipients.employees.map(emp => (
+                      <Select.Option key={emp.id} value={emp.id}>
+                        {emp.name} ({emp.designation})
+                      </Select.Option>
+                    ))}
+                  </Select.OptGroup>
+                )}
+              </Select>
+            </div>
+          )}
+
+          {/* MESSAGE INPUT */}
+          <div>
+            <Text strong>Message:</Text>
+            <TextArea
+              placeholder="Type your message here..."
+              value={modalMessage}
+              onChange={(e) => setModalMessage(e.target.value)}
+              autoSize={{ minRows: 4, maxRows: 8 }}
+              style={{ marginTop: 8 }}
+            />
+            <div style={{ marginTop: 8, display: 'flex', justifyContent: 'space-between' }}>
+              <Text type="secondary" style={{ fontSize: 11 }}>
+                {modalMessage.length} characters
+              </Text>
+              {modalMessage.length > 500 && (
+                <Text type="warning" style={{ fontSize: 11 }}>
+                  Consider keeping messages concise
+                </Text>
+              )}
+            </div>
+          </div>
+
+          {/* PREVIEW SUMMARY */}
+          <div style={{ 
+            padding: 12, 
+            backgroundColor: '#f0f0f0', 
+            borderRadius: 8,
+            border: '1px dashed #d9d9d9'
+          }}>
+            <Text strong style={{ display: 'block', marginBottom: 8, fontSize: 12 }}>
+              📋 Message Summary:
+            </Text>
+            <Space direction="vertical" size={4}>
+              <Text style={{ fontSize: 12 }}>
+                <Text strong>Type:</Text> {
+                  messageType === 'broadcast_all' ? 'Broadcast to Everyone' :
+                  messageType === 'broadcast_managers' ? 'Broadcast to Managers' :
+                  messageType === 'broadcast_employees' ? 'Broadcast to Employees' :
+                  messageType === 'custom' ? `Custom (${selectedRecipients.length} selected)` :
+                  messageType === 'private' ? 'Private Message' : ''
+                }
+              </Text>
+              <Text style={{ fontSize: 12 }}>
+                <Text strong>Message length:</Text> {modalMessage.length} characters
+              </Text>
+            </Space>
+          </div>
+
+        </Space>
+      </Modal>
 
     </div>
   );
