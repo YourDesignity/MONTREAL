@@ -186,7 +186,7 @@ async def create_employee(
         raise HTTPException(status_code=500, detail="Failed to create employee")
 
 # =============================================================================
-# 4. UPDATE EMPLOYEE (Managers can update their own team)
+# 4. UPDATE EMPLOYEE (Admins Only - Managers have view-only access)
 # =============================================================================
 @router.put("/{employee_id}", response_model=schemas.EmployeeFull)
 async def update_employee(
@@ -194,15 +194,16 @@ async def update_employee(
     employee_update: schemas.EmployeeUpdate,
     current_user: dict = Depends(get_current_active_user)
 ):
+    # Only SuperAdmin and Admin can edit employee details (including salary/allowance)
+    if current_user.get("role") not in ["SuperAdmin", "Admin"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Only Admins can edit employee details. Site Managers have view-only access."
+        )
+
     emp = await Employee.find_one(Employee.uid == employee_id)
     if not emp:
         raise HTTPException(status_code=404, detail="Employee not found")
-    
-    # Manager Check
-    if current_user.get("role") not in ["SuperAdmin", "Admin"]:
-        me = await Admin.find_one(Admin.email == current_user.get("sub"))
-        if emp.manager_id != me.uid:
-            raise HTTPException(status_code=403, detail="You can only update employees assigned to you.")
 
     # Apply updates
     data = employee_update.model_dump(exclude_unset=True)

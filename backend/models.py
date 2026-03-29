@@ -118,12 +118,16 @@ class DutyAssignment(Document):
 
     This is intentional. The frontend handles both patterns defensively
     (``emp.id || emp.uid``). Do NOT change this to ``*_uid`` naming.
+
+    Note: ``manager_id``, ``start_date``, and ``end_date`` are Optional for
+    backward compatibility with legacy records created before these fields
+    were required. New records always populate all fields.
     """
     employee_id: int
     site_id: int
-    manager_id: int
-    start_date: str
-    end_date: str
+    manager_id: Optional[int] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
     class Settings:
         name = "duty_assignments"
 

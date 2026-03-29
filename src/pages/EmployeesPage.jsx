@@ -179,7 +179,9 @@ function EmployeesPage() {
             align: 'right',
             render: (_, record) => (
                 <Space>
-                    <Button type="text" icon={<EditOutlined />} onClick={() => openEditModal(record)} />
+                    {isHighLevelAdmin && (
+                        <Button type="text" icon={<EditOutlined />} onClick={() => openEditModal(record)} />
+                    )}
                     {isHighLevelAdmin && (
                         <Button type="text" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.id || record.uid)} />
                     )}
