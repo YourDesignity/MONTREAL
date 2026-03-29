@@ -16,8 +16,8 @@ logger = setup_logger("DutyListRouter", log_file="logs/duty_list.log", level=log
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_duty_assignment(assignments: List[schemas.DutyAssignmentCreate], current_user: dict = Depends(get_current_active_user)):
-    if current_user.get("role") not in ["SuperAdmin", "Admin"]:
-        raise HTTPException(status_code=403, detail="Only Admins can assign workforce duties.")
+    if current_user.get("role") not in ["SuperAdmin", "Admin", "Site Manager"]:
+        raise HTTPException(status_code=403, detail="Only Admins and Site Managers can assign workforce duties.")
 
     try:
         for item in assignments:
