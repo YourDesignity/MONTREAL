@@ -3,6 +3,7 @@
 import React, { createContext, useState, useContext } from 'react';
 import { jwtDecode } from 'jwt-decode'; 
 import * as apiService from '../services/apiService';
+import websocketService from '../services/websocketService';
 
 const AuthContext = createContext(null);
 
@@ -59,6 +60,10 @@ export const AuthProvider = ({ children }) => {
             
             setToken(access_token);
             setUser(decodedUser);
+
+            // Connect WebSocket AFTER token is saved
+            console.log("4. Connecting WebSocket...");
+            websocketService.connect();
             
             return decodedUser;
         } catch (error) {
@@ -69,6 +74,9 @@ export const AuthProvider = ({ children }) => {
     };
 
     const logout = () => {
+        // Disconnect WebSocket BEFORE clearing token
+        websocketService.disconnect();
+
         apiService.logout();
         localStorage.removeItem('access_token');
         localStorage.removeItem('accessToken'); // Remove fallback key too

@@ -62,17 +62,22 @@ function EmployeesPage() {
             } else {
                 // --- MANAGER LOGIC: Robust ID Matching ---
                 const currentManagerId = parseInt(user.id);
+                console.log(`Manager Access (UID: ${currentManagerId}): Filtering duty assignments...`);
                 
                 // Get IDs of employees assigned to this manager today from duty list
                 const assignedEmployeeIds = dutyData
                     .filter(duty => parseInt(duty.manager_id) === currentManagerId)
                     .map(duty => duty.employee_id);
 
+                console.log(`Manager Access (UID: ${currentManagerId}): Found ${assignedEmployeeIds.length} duty assignments`, assignedEmployeeIds);
+
                 // Filter employee master list by those IDs
                 const myTeam = empData.filter(emp => {
                     const empId = emp.id || emp.uid; // Check both standard id and uid
                     return assignedEmployeeIds.includes(parseInt(empId));
                 });
+
+                console.log(`Manager Access (UID: ${currentManagerId}): Retrieved ${myTeam.length} assigned employees`);
                 
                 setEmployees(myTeam);
             }
