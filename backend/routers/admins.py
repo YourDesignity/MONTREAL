@@ -100,7 +100,7 @@ async def get_all_managers(current_user: dict = Depends(get_current_active_user)
         response_data = []
         for mgr in managers:
             response_data.append({
-                "id": mgr.uid, 
+                "uid": mgr.uid, 
                 "email": mgr.email, 
                 "full_name": mgr.full_name, 
                 "designation": mgr.designation
