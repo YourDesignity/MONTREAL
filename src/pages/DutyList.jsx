@@ -12,7 +12,7 @@ import '../styles/DutyList.css';
 // --- Services ---
 import { 
     getEmployees, getSites, saveDutyAssignments, 
-    getDutyAssignments, getAdmins
+    getDutyAssignments, getManagers
 } from '../services/apiService';
 
 const { Title, Text } = Typography;
@@ -58,16 +58,11 @@ const DutyListPage = () => {
         try {
             setLoading(true);
             const [empData, siteData, adminData] = await Promise.all([
-                getEmployees(), getSites(), getAdmins()
+                getEmployees(), getSites(), getManagers()
             ]);
             setEmployees(Array.isArray(empData) ? empData : []);
             setSites(Array.isArray(siteData) ? siteData : []);
-            
-            // Filter: EXCLUDE SuperAdmin and Admin. Only show specific Manager roles.
-            const onlyManagers = (Array.isArray(adminData) ? adminData : []).filter(
-                a => a.role !== 'SuperAdmin' && a.role !== 'Admin'
-            );
-            setManagers(onlyManagers);
+            setManagers(Array.isArray(adminData) ? adminData : []);
         } catch (err) {
             message.error("Failed to load workforce data");
         } finally {
@@ -270,7 +265,7 @@ const DutyListPage = () => {
                 onCancel={() => setIsModalOpen(false)} 
                 confirmLoading={isSubmitting}
                 okText="Complete Assignment"
-                destroyOnClose={true}
+                destroyOnHidden
             >
                 <Form form={form} layout="vertical" initialValues={{ dateRange: [dayjs(), dayjs().add(7, 'days')] }}>
                     <Form.Item 

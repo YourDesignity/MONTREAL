@@ -7,12 +7,10 @@ import {
   SearchOutlined, PlusOutlined, FileTextOutlined, 
   EditOutlined, DeleteOutlined, UserOutlined 
 } from '@ant-design/icons';
-import dayjs from 'dayjs';
-
 // --- Services ---
 import { 
     getEmployees, createPayslips, 
-    updateEmployee, deleteEmployee, getAdmins, getDutyAssignments 
+    updateEmployee, deleteEmployee, getManagers 
 } from '../services/apiService';
 import websocketService from '../services/websocketService';
 import { useAuth } from '../context/AuthContext'; 
@@ -45,41 +43,18 @@ function EmployeesPage() {
         if (!user) return;
         try {
             setLoading(true);
-            const today = dayjs().format('YYYY-MM-DD');
-            
-            // Fetch necessary data based on role
-            const promises = [getEmployees(), getDutyAssignments(today)];
-            if (isHighLevelAdmin) promises.push(getAdmins());
+
+            // Backend already filters employees by manager_id for Site Manager role
+            const promises = [getEmployees()];
+            if (isHighLevelAdmin) promises.push(getManagers());
 
             const results = await Promise.all(promises);
             const empData = results[0] || [];
-            const dutyData = results[1] || [];
-            const adminData = isHighLevelAdmin ? (results[2] || []) : [];
+            const adminData = isHighLevelAdmin ? (results[1] || []) : [];
 
+            setEmployees(empData);
             if (isHighLevelAdmin) {
-                setEmployees(empData);
                 setManagers(adminData);
-            } else {
-                // --- MANAGER LOGIC: Robust ID Matching ---
-                const currentManagerId = parseInt(user.id);
-                console.log(`Manager Access (UID: ${currentManagerId}): Filtering duty assignments...`);
-                
-                // Get IDs of employees assigned to this manager today from duty list
-                const assignedEmployeeIds = dutyData
-                    .filter(duty => parseInt(duty.manager_id) === currentManagerId)
-                    .map(duty => duty.employee_id);
-
-                console.log(`Manager Access (UID: ${currentManagerId}): Found ${assignedEmployeeIds.length} duty assignments`, assignedEmployeeIds);
-
-                // Filter employee master list by those IDs
-                const myTeam = empData.filter(emp => {
-                    const empId = emp.id || emp.uid; // Check both standard id and uid
-                    return assignedEmployeeIds.includes(parseInt(empId));
-                });
-
-                console.log(`Manager Access (UID: ${currentManagerId}): Retrieved ${myTeam.length} assigned employees`);
-                
-                setEmployees(myTeam);
             }
         } catch (e) {
             console.error("Load Error:", e);
@@ -219,7 +194,7 @@ function EmployeesPage() {
                 <Row align="middle" justify="space-between" gutter={[16, 16]}>
                     <Col xs={24} md={12}>
                         <Title level={4} style={{ margin: 0 }}>
-                            {isHighLevelAdmin ? "Workforce Grid" : "My Assigned Team (Today)"}
+                            {isHighLevelAdmin ? "Workforce Grid" : "My Assigned Team"}
                         </Title>
                     </Col>
                     <Col xs={24} md={12} style={{ textAlign: 'right' }}>

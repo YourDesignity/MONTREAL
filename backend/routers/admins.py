@@ -84,7 +84,7 @@ async def get_all_managers(current_user: dict = Depends(get_current_active_user)
     
     user_role = current_user.get("role")
     # You might want to move these allowed roles to config in the future too
-    if user_role not in ["SuperAdmin", "Admin"]:
+    if user_role not in ["SuperAdmin", "Admin", "Site Manager"]:
         logger.warning(f"ACCESS DENIED: Role '{user_role}' tried to fetch managers.")
         raise HTTPException(status_code=403, detail="Forbidden")
 
