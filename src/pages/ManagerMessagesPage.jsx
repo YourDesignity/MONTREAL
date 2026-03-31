@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Card, List, Avatar, Button, Input, Tag, Typography, Space,
-  message, theme, Row, Col, Spin, Badge, Empty
+  message, theme, Row, Col, Spin, Badge, Empty, Modal, Select
 } from 'antd';
 import {
   SendOutlined, UserOutlined, GlobalOutlined, MessageFilled,
@@ -30,6 +30,13 @@ const ManagerMessagesPage = () => {
   const [messages, setMessages] = useState([]);
   const [replyText, setReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
+
+  // New Message Modal state
+  const [isNewMessageModalOpen, setIsNewMessageModalOpen] = useState(false);
+  const [recipients, setRecipients] = useState({ admins: [], employees: [] });
+  const [selectedRecipientId, setSelectedRecipientId] = useState(null);
+  const [newMessageText, setNewMessageText] = useState('');
+  const [sendingNewMessage, setSendingNewMessage] = useState(false);
 
   const selectedConversationRef = useRef(null);
 
@@ -79,9 +86,23 @@ const ManagerMessagesPage = () => {
     }
   };
 
+  const loadRecipients = async () => {
+    try {
+      const res = await axios.get(
+        `${API_BASE_URL}/messages/manager-recipients`,
+        getAuthHeaders()
+      );
+      setRecipients(res.data);
+    } catch (err) {
+      message.error('Failed to load recipients');
+      console.error(err);
+    }
+  };
+
   // Initial load + polling every 5 seconds
   useEffect(() => {
     loadConversations();
+    loadRecipients();
 
     const interval = setInterval(() => {
       loadConversations();
@@ -131,6 +152,36 @@ const ManagerMessagesPage = () => {
       console.error(err);
     } finally {
       setSendingReply(false);
+    }
+  };
+
+  const handleSendNewMessage = async () => {
+    if (!newMessageText.trim() || !selectedRecipientId) {
+      message.warning('Please select a recipient and type a message');
+      return;
+    }
+
+    try {
+      setSendingNewMessage(true);
+      await axios.post(
+        `${API_BASE_URL}/messages/private/${selectedRecipientId}`,
+        null,
+        {
+          ...getAuthHeaders(),
+          params: { content: newMessageText },
+        }
+      );
+
+      message.success('Message sent successfully!');
+      setNewMessageText('');
+      setSelectedRecipientId(null);
+      setIsNewMessageModalOpen(false);
+      await loadConversations();
+    } catch (err) {
+      message.error(err.response?.data?.detail || 'Failed to send message');
+      console.error(err);
+    } finally {
+      setSendingNewMessage(false);
     }
   };
 
@@ -192,16 +243,25 @@ const ManagerMessagesPage = () => {
             <Text type="secondary">Your inbox – read and reply to messages</Text>
           </Col>
           <Col>
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={() => {
-                loadConversations();
-                if (selectedConversation) loadMessages(selectedConversation.id);
-              }}
-              loading={loading}
-            >
-              Refresh
-            </Button>
+            <Space>
+              <Button
+                type="primary"
+                icon={<CommentOutlined />}
+                onClick={() => setIsNewMessageModalOpen(true)}
+              >
+                New Message
+              </Button>
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={() => {
+                  loadConversations();
+                  if (selectedConversation) loadMessages(selectedConversation.id);
+                }}
+                loading={loading}
+              >
+                Refresh
+              </Button>
+            </Space>
           </Col>
         </Row>
       </Card>
@@ -486,6 +546,78 @@ const ManagerMessagesPage = () => {
           </Card>
         </Col>
       </Row>
+
+      {/* NEW MESSAGE MODAL */}
+      <Modal
+        title="📨 Send New Message"
+        open={isNewMessageModalOpen}
+        onCancel={() => {
+          setIsNewMessageModalOpen(false);
+          setNewMessageText('');
+          setSelectedRecipientId(null);
+        }}
+        footer={null}
+        width={600}
+      >
+        <Space direction="vertical" style={{ width: '100%' }} size="large">
+          <div>
+            <Text strong>Send Message To:</Text>
+            <Select
+              placeholder="Select a person..."
+              value={selectedRecipientId}
+              onChange={setSelectedRecipientId}
+              style={{ width: '100%', marginTop: 8 }}
+              size="large"
+              showSearch
+              filterOption={(input, option) =>
+                String(option.children || '').toLowerCase().includes(input.toLowerCase())
+              }
+            >
+              {recipients.admins && recipients.admins.length > 0 && (
+                <Select.OptGroup label="👔 Admins">
+                  {recipients.admins.map(admin => (
+                    <Select.Option key={admin.id} value={admin.id}>
+                      {admin.name} ({admin.role})
+                    </Select.Option>
+                  ))}
+                </Select.OptGroup>
+              )}
+
+              {recipients.employees && recipients.employees.length > 0 && (
+                <Select.OptGroup label="👷 My Employees">
+                  {recipients.employees.map(emp => (
+                    <Select.Option key={emp.id} value={emp.id}>
+                      {emp.name} - {emp.designation}
+                    </Select.Option>
+                  ))}
+                </Select.OptGroup>
+              )}
+            </Select>
+          </div>
+
+          <div>
+            <Text strong>Message:</Text>
+            <TextArea
+              value={newMessageText}
+              onChange={(e) => setNewMessageText(e.target.value)}
+              placeholder="Type your message here..."
+              autoSize={{ minRows: 4, maxRows: 8 }}
+              style={{ marginTop: 8 }}
+            />
+          </div>
+
+          <Button
+            type="primary"
+            icon={<SendOutlined />}
+            onClick={handleSendNewMessage}
+            loading={sendingNewMessage}
+            block
+            size="large"
+          >
+            Send Message
+          </Button>
+        </Space>
+      </Modal>
     </div>
   );
 };

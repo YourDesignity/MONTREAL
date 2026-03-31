@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
-from backend.models import Conversation, Message, Admin, Employee
+from backend.models import Conversation, Message, Admin, Employee, DutyAssignment
 from backend.security import get_current_active_user
 from backend.database import get_next_uid
 from backend.websocket_manager import manager as ws_manager
@@ -572,6 +572,68 @@ async def get_available_recipients(current_user: dict = Depends(get_current_acti
 
 
 # =============================================================================
+# ENDPOINT: GET MANAGER RECIPIENTS
+# =============================================================================
+
+@router.get("/manager-recipients")
+async def get_manager_recipients(current_user: dict = Depends(get_current_active_user)):
+    """
+    Get list of users a manager can message:
+    - All Admins (SuperAdmin and Admin roles)
+    - Employees assigned to this manager (via DutyAssignment)
+
+    Only accessible by Site Managers.
+    """
+    me = await Admin.find_one(Admin.email == current_user.get("sub"))
+    if not me or me.role != "Site Manager":
+        raise HTTPException(status_code=403, detail="Only Site Managers can access this endpoint")
+
+    # Get all admins
+    admins = await Admin.find(
+        Admin.is_active == True,
+        Admin.role.in_(["SuperAdmin", "Admin"])
+    ).to_list()
+
+    # Get employees assigned to this manager via DutyAssignment
+    assignments = await DutyAssignment.find(
+        DutyAssignment.manager_id == me.uid
+    ).to_list()
+
+    employee_ids = [a.employee_id for a in assignments]
+
+    employees = []
+    if employee_ids:
+        employees = await Employee.find(
+            Employee.uid.in_(employee_ids),
+            Employee.is_active == True
+        ).to_list()
+
+    result = {
+        "admins": [
+            {
+                "id": a.uid,
+                "name": a.full_name,
+                "role": a.role,
+                "email": a.email,
+            }
+            for a in admins
+        ],
+        "employees": [
+            {
+                "id": e.uid,
+                "name": e.name,
+                "designation": e.designation,
+            }
+            for e in employees
+        ],
+    }
+
+    logger.info(f"Manager {me.full_name} requested recipient list")
+
+    return result
+
+
+# =============================================================================
 # ENDPOINT: SEND PRIVATE MESSAGE (PHASE 3)
 # =============================================================================
 
@@ -652,13 +714,33 @@ async def send_private_message(
     if sender_type == "employee" and recipient_type == "employee":
         raise HTTPException(403, "Employees cannot send private messages to other employees")
 
-    # Rule 4: Managers can only message admins (not employees)
+    # Rule 4: Managers can message admins OR their assigned employees
     if sender_type == "manager" and recipient_type == "employee":
-        raise HTTPException(403, "Managers can only message Admins, not employees")
+        # Check if employee is assigned to this manager
+        assignment = await DutyAssignment.find_one(
+            DutyAssignment.employee_id == recipient_id,
+            DutyAssignment.manager_id == sender_id
+        )
 
-    # Rule 5: Employees can only message admins (not managers)
+        if not assignment:
+            raise HTTPException(
+                403,
+                "Managers can only message employees assigned to them"
+            )
+
+    # Rule 5: Employees can only message admins or their assigned manager
     if sender_type == "employee" and recipient_type == "manager":
-        raise HTTPException(403, "Employees can only message Admins, not managers")
+        # Check if this manager is assigned to this employee
+        assignment = await DutyAssignment.find_one(
+            DutyAssignment.employee_id == sender_id,
+            DutyAssignment.manager_id == recipient_id
+        )
+
+        if not assignment:
+            raise HTTPException(
+                403,
+                "Employees can only message their assigned manager or admins"
+            )
 
     # =========================================================================
     # 4. CHECK IF CONVERSATION ALREADY EXISTS (BIDIRECTIONAL)
