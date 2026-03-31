@@ -1,5 +1,5 @@
 from typing import List, Optional, Dict, Any, Annotated
-from datetime import datetime
+from datetime import datetime, date, time
 from beanie import Document, Indexed
 from pydantic import Field, BaseModel
 
@@ -391,10 +391,92 @@ class ManagerProfile(Document):
 
 
 
+# =============================================================================
+# 8. MANAGER ATTENDANCE SYSTEM
+# =============================================================================
+
+class ManagerAttendanceConfig(Document):
+    """
+    Manager Attendance Configuration - Customizable check-in windows per manager.
+    Each manager can have different time windows set by admin.
+    """
+    uid: int
+    manager_id: int  # Foreign key to Admin.uid (Site Manager)
+
+    # Morning Segment
+    morning_enabled: bool = True
+    morning_window_start: time = time(8, 0)
+    morning_window_end: time = time(9, 30)
+
+    # Afternoon Segment
+    afternoon_enabled: bool = True
+    afternoon_window_start: time = time(13, 0)
+    afternoon_window_end: time = time(14, 0)
+
+    # Evening Segment
+    evening_enabled: bool = True
+    evening_window_start: time = time(17, 0)
+    evening_window_end: time = time(18, 30)
+
+    # Rules
+    require_all_segments: bool = True
+
+    # Metadata
+    configured_by_admin_id: int
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
+
+    class Settings:
+        name = "manager_attendance_configs"
+        indexes = ["manager_id"]
+
+
+class ManagerAttendance(Document):
+    """
+    Manager Attendance Record - Tracks daily 3-segment check-ins.
+    """
+    uid: int
+    manager_id: int  # Foreign key to Admin.uid (Site Manager)
+    date: date
+
+    # Morning Segment
+    morning_check_in: Optional[datetime] = None
+    morning_status: Optional[str] = None  # "On Time" | "Late" | "Missed" | "Admin Override" | "Disabled"
+
+    # Afternoon Segment
+    afternoon_check_in: Optional[datetime] = None
+    afternoon_status: Optional[str] = None
+
+    # Evening Segment
+    evening_check_out: Optional[datetime] = None
+    evening_status: Optional[str] = None
+
+    # Overall Day Status
+    day_status: str = "Pending"  # "Full Day" | "Partial" | "Absent" | "Leave" | "Pending"
+
+    # Override Information
+    is_overridden: bool = False
+    overridden_by_admin_id: Optional[int] = None
+    override_reason: Optional[str] = None
+    override_timestamp: Optional[datetime] = None
+
+    # Additional Info
+    notes: Optional[str] = None
+
+    # Metadata
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
+
+    class Settings:
+        name = "manager_attendance"
+        indexes = [
+            "manager_id",
+            "date",
+            [("manager_id", 1), ("date", -1)]
+        ]
 
 
 
-# # backend/models.py
 
 # from typing import List, Optional, Dict, Any, Annotated # <--- Added Annotated
 # from datetime import datetime
