@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
-  Card, List, Avatar, Button, Input, Tag, Typography, Space,
+  Card, Avatar, Button, Input, Tag, Typography, Space,
   message, theme, Row, Col, Spin, Badge, Empty, Modal, Select
 } from 'antd';
 import {
@@ -281,17 +281,22 @@ const ManagerMessagesPage = () => {
                 />
               </Space>
             }
-            bordered={false}
-            bodyStyle={{
-              height: 'calc(100% - 60px)',
-              overflowY: 'auto',
-              padding: 12,
+            variant="borderless"
+            styles={{
+              body: {
+                height: 'calc(100% - 60px)',
+                overflowY: 'auto',
+                padding: 12,
+              }
             }}
             style={{ height: '100%' }}
           >
             {loading && conversations.length === 0 && (
               <div style={{ textAlign: 'center', padding: 40 }}>
-                <Spin tip="Loading conversations..." />
+                <Spin size="large">
+                  <div style={{ padding: 50 }} />
+                </Spin>
+                <div style={{ marginTop: 16, color: '#999' }}>Loading conversations...</div>
               </div>
             )}
 
@@ -302,10 +307,10 @@ const ManagerMessagesPage = () => {
               />
             )}
 
-            <List
-              dataSource={conversations}
-              renderItem={(conv) => (
-                <List.Item
+            <div>
+              {conversations.map((conv) => (
+                <div
+                  key={conv.id}
                   onClick={() => setSelectedConversation(conv)}
                   style={{
                     cursor: 'pointer',
@@ -323,46 +328,47 @@ const ManagerMessagesPage = () => {
                         ? `1px solid ${token.colorPrimary}`
                         : '1px solid #f0f0f0',
                     transition: 'all 0.15s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
                   }}
                 >
-                  <List.Item.Meta
-                    avatar={
-                      <Badge count={conv.unread_count} size="small">
-                        <Avatar
-                          icon={getConversationIcon(conv.conversation_type)}
-                          style={{ backgroundColor: token.colorPrimaryBg }}
-                        />
-                      </Badge>
-                    }
-                    title={
-                      <Text
-                        strong={conv.unread_count > 0}
-                        style={{ fontSize: 13 }}
-                        ellipsis
-                      >
-                        {conv.title || 'Conversation'}
-                      </Text>
-                    }
-                    description={
-                      <Text type="secondary" style={{ fontSize: 12 }} ellipsis>
-                        {conv.last_message || 'No messages yet'}
-                      </Text>
-                    }
-                  />
+                  <Badge count={conv.unread_count} size="small">
+                    <Avatar
+                      icon={getConversationIcon(conv.conversation_type)}
+                      style={{ backgroundColor: token.colorPrimaryBg }}
+                    />
+                  </Badge>
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <Text
+                      strong={conv.unread_count > 0}
+                      style={{ fontSize: 13, display: 'block' }}
+                      ellipsis
+                    >
+                      {conv.title || 'Conversation'}
+                    </Text>
+                    <Text type="secondary" style={{ fontSize: 12, display: 'block' }} ellipsis>
+                      {conv.last_message || 'No messages yet'}
+                    </Text>
+                  </div>
+
                   <div style={{ fontSize: 11, color: '#aaa', whiteSpace: 'nowrap' }}>
                     {conv.last_activity ? formatTimestamp(conv.last_activity) : ''}
                   </div>
-                </List.Item>
-              )}
-            />
+                </div>
+              ))}
+            </div>
           </Card>
         </Col>
 
         {/* RIGHT: MESSAGE THREAD */}
         <Col xs={24} md={16} style={{ height: '100%' }}>
           <Card
-            bordered={false}
-            bodyStyle={{ padding: 0, height: '100%', display: 'flex', flexDirection: 'column' }}
+            variant="borderless"
+            styles={{
+              body: { padding: 0, height: '100%', display: 'flex', flexDirection: 'column' }
+            }}
             style={{ height: '100%' }}
           >
             {/* No conversation selected */}
