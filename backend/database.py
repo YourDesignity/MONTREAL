@@ -11,7 +11,7 @@ from backend.models import (
     Counter, Admin, Employee, Site, Attendance, Schedule, Designation, 
     Overtime, Deduction, DutyAssignment, Vehicle, TripLog, 
     MaintenanceLog, FuelLog, VehicleExpense, Contract, InventoryItem,
-    Invoice, Conversation, Message
+    Invoice, Conversation, Message, ManagerProfile
 )
 
 # Load Environment Variables
@@ -43,7 +43,7 @@ async def init_db():
                 Counter, Admin, Employee, Site, Attendance, Schedule, Designation, 
                 Overtime, Deduction, DutyAssignment, Vehicle, TripLog, 
                 MaintenanceLog, FuelLog, VehicleExpense, Contract, InventoryItem,
-                Invoice, Conversation, Message
+                Invoice, Conversation, Message, ManagerProfile
             ]
         )
         print(f"✅ Connected to MongoDB at {DB_NAME}")

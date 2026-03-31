@@ -29,7 +29,8 @@ from backend.routers import (
     admins, attendance, sites, schedules,
     employees, payslips, roles, designations,
     duty_list, dashboard, vehicles, contracts,
-    inventory, invoices, finance, messages
+    inventory, invoices, finance, messages,
+    managers
 )
 
 # --- Initialize Logger ---
@@ -150,6 +151,7 @@ app.include_router(inventory.router)
 app.include_router(invoices.router)
 app.include_router(finance.router)
 app.include_router(messages.router)
+app.include_router(managers.router)
 
 @app.get("/", tags=["Root"])
 def read_root():
