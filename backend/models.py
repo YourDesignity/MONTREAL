@@ -426,6 +426,12 @@ class ManagerAttendanceConfig(Document):
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
 
+    class Config:
+        json_encoders = {
+            time: lambda v: v.isoformat() if v else None,
+            datetime: lambda v: v.isoformat() if v else None
+        }
+
     class Settings:
         name = "manager_attendance_configs"
         indexes = ["manager_id"]
