@@ -106,14 +106,16 @@ async def add_message_to_conversation(
 
     logger.info(f"Message added to conversation {conversation_id} by {sender_name}")
 
-    # WebSocket broadcast
+    # WebSocket broadcast with participant info for targeted notifications
     await ws_manager.broadcast(
         json.dumps(
             {
                 "type": "new_message",
                 "conversation_id": conversation_id,
+                "participant_ids": conv.participant_ids if conv else [],  # Who should be notified
                 "message": {
                     "id": new_message.uid,
+                    "sender_id": sender_id,
                     "sender_name": sender_name,
                     "content": content,
                     "timestamp": new_message.timestamp.isoformat(),
@@ -638,6 +640,36 @@ async def get_manager_recipients(current_user: dict = Depends(get_current_active
 
 
 # =============================================================================
+# ENDPOINT: GET TOTAL UNREAD MESSAGE COUNT
+# =============================================================================
+
+@router.get("/unread-count")
+async def get_total_unread_count(current_user: dict = Depends(get_current_active_user)):
+    """
+    Get total unread message count across all conversations for the current user.
+
+    Used for notification badge in header.
+    Returns: {"unread_count": <number>}
+    """
+    _, my_id, _, _ = await _get_current_user_profile(current_user)
+
+    # Get all conversations where user is a participant
+    conversations = await Conversation.find(
+        Conversation.participant_ids == my_id
+    ).to_list()
+
+    # Sum up all unread counts from all conversations
+    total_unread = sum(
+        conv.unread_count_map.get(str(my_id), 0)
+        for conv in conversations
+    )
+
+    logger.debug(f"User {my_id} has {total_unread} total unread messages across {len(conversations)} conversations")
+
+    return {"unread_count": total_unread}
+
+
+# =============================================================================
 # ENDPOINT: SEND PRIVATE MESSAGE (PHASE 3)
 # =============================================================================
 
@@ -790,13 +822,8 @@ async def send_private_message(
         }
 
     # Create new private conversation
-    # Title shows the OTHER person's name (from each user's perspective)
-    if sender_type == "admin":
-        # Admin's view: "Chat with Manager John" or "Chat with Employee Sarah"
-        title = f"💬 Chat with {recipient_name}"
-    else:
-        # Manager/Employee's view: "Chat with Admin"
-        title = f"💬 Chat with Admin"
+    # Title ALWAYS shows the recipient's name (the person you're chatting with)
+    title = f"💬 Chat with {recipient_name}"
 
     conv = await create_conversation(
         conversation_type="private",
