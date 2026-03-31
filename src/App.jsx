@@ -21,6 +21,10 @@ import InventoryPage from './pages/InventoryPage';
 import SiteManagement from './components/SiteManagement'; 
 import DesignationManagement from './pages/DesignationManagement';
 import AdminManagementPage from './pages/AdminManagementPage';
+import ManagersPage from './pages/ManagersPage';
+import CreateManagerPage from './pages/CreateManagerPage';
+import EditManagerPage from './pages/EditManagerPage';
+import ManagerAttendanceAdminPage from './pages/ManagerAttendanceAdminPage';
 import PayslipPage from './pages/PayslipPage';
 import OvertimePage from './pages/OvertimePage';
 import DeductionsPage from './pages/DeductionsPage';
@@ -85,6 +89,10 @@ const App = () => {
             
             {/* Administration */}
             <Route path="admins" element={<AdminManagementPage />} />
+            <Route path="managers" element={<ManagersPage />} />
+            <Route path="managers/create" element={<CreateManagerPage />} />
+            <Route path="managers/edit/:id" element={<EditManagerPage />} />
+            <Route path="manager-attendance" element={<ManagerAttendanceAdminPage />} />
             <Route path="messages" element={<MessagePage />} />
             <Route path="manager-messages" element={<ManagerMessagesPage />} />
           </Route>

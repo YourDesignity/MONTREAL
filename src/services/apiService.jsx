@@ -175,6 +175,21 @@ export const getAdmins = () => fetchWithAuth('/admins/');
 export const getManagers = () => fetchWithAuth('/admins/managers');
 export const createAdmin = (adminData) => fetchWithAuth('/admins/', { method: 'POST', body: JSON.stringify(adminData) });
 
+// --- 8. MANAGER PROFILES ---
+export const getManagerProfiles = () => fetchWithAuth('/managers/profiles');
+export const getManagerProfileById = (id) => fetchWithAuth(`/managers/profiles/${id}`);
+export const createManagerProfile = (data) => fetchWithAuth('/managers/profiles', { method: 'POST', body: JSON.stringify(data) });
+export const updateManagerProfile = (id, data) => fetchWithAuth(`/managers/profiles/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const deleteManagerProfile = (id) => fetchWithAuth(`/managers/profiles/${id}`, { method: 'DELETE' });
+export const updateManagerCredentials = (id, data) => fetchWithAuth(`/managers/profiles/${id}/credentials`, { method: 'PUT', body: JSON.stringify(data) });
+export const updateManagerSites = (id, data) => fetchWithAuth(`/managers/profiles/${id}/sites`, { method: 'PUT', body: JSON.stringify(data) });
+
+// --- 9. MANAGER ATTENDANCE CONFIG & MONITORING ---
+export const getManagerAttendanceConfig = (id) => fetchWithAuth(`/managers/attendance/config/${id}`);
+export const updateManagerAttendanceConfig = (id, data) => fetchWithAuth(`/managers/attendance/config/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const getManagerAttendanceAll = (date) => fetchWithAuth(`/managers/attendance/all?date=${date}`);
+export const overrideManagerAttendance = (data) => fetchWithAuth('/managers/attendance/override', { method: 'POST', body: JSON.stringify(data) });
+
 export const getInventory = () => fetchWithAuth('/inventory/');
 export const addInventoryItem = (data) => fetchWithAuth('/inventory/', { method: 'POST', body: JSON.stringify(data) });
 export const deleteInventoryItem = (id) => fetchWithAuth(`/inventory/${id}`, { method: 'DELETE' });
@@ -189,7 +204,10 @@ const apiService = {
     getContracts, addContract, deleteContract, addProjectExpense,
     getInvoices, createInvoice, payInvoice, downloadInvoicePDF,
     getAdmins, createAdmin, getInventory, addInventoryItem, deleteInventoryItem,
-    getManagers
+    getManagers,
+    getManagerProfiles, getManagerProfileById, createManagerProfile, updateManagerProfile, deleteManagerProfile,
+    updateManagerCredentials, updateManagerSites,
+    getManagerAttendanceConfig, updateManagerAttendanceConfig, getManagerAttendanceAll, overrideManagerAttendance,
 };
 
 export default apiService;
