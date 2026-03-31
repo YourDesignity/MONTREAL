@@ -34,8 +34,8 @@ function Sidenav({ color }) {
       },
       
       {
-        path: user?.role === 'Manager' ? "/manager-messages" : "/messages",
-        name: user?.role === 'Manager' ? "My Messages" : "Messages",
+        path: user?.role === 'Site Manager' ? "/manager-messages" : "/messages",
+        name: user?.role === 'Site Manager' ? "My Messages" : "Messages",
         icon: <MessageOutlined />,
         perm: null,
       },
