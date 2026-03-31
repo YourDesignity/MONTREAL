@@ -110,21 +110,15 @@ async def get_my_attendance_config(
 
     return {
         "manager_id": me.uid,
-        "morning": {
-            "enabled": config.morning_enabled,
-            "window_start": config.morning_window_start.isoformat() if config.morning_enabled else None,
-            "window_end": config.morning_window_end.isoformat() if config.morning_enabled else None
-        },
-        "afternoon": {
-            "enabled": config.afternoon_enabled,
-            "window_start": config.afternoon_window_start.isoformat() if config.afternoon_enabled else None,
-            "window_end": config.afternoon_window_end.isoformat() if config.afternoon_enabled else None
-        },
-        "evening": {
-            "enabled": config.evening_enabled,
-            "window_start": config.evening_window_start.isoformat() if config.evening_enabled else None,
-            "window_end": config.evening_window_end.isoformat() if config.evening_enabled else None
-        },
+        "morning_enabled": config.morning_enabled,
+        "morning_window_start": config.morning_window_start.isoformat() if config.morning_enabled else None,
+        "morning_window_end": config.morning_window_end.isoformat() if config.morning_enabled else None,
+        "afternoon_enabled": config.afternoon_enabled,
+        "afternoon_window_start": config.afternoon_window_start.isoformat() if config.afternoon_enabled else None,
+        "afternoon_window_end": config.afternoon_window_end.isoformat() if config.afternoon_enabled else None,
+        "evening_enabled": config.evening_enabled,
+        "evening_window_start": config.evening_window_start.isoformat() if config.evening_enabled else None,
+        "evening_window_end": config.evening_window_end.isoformat() if config.evening_enabled else None,
         "require_all_segments": config.require_all_segments
     }
 
@@ -248,41 +242,24 @@ async def get_my_today_attendance(
         return {
             "date": today.isoformat(),
             "day_status": "Pending",
-            "morning": {
-                "enabled": config.morning_enabled if config else True,
-                "check_in": None,
-                "status": None
-            },
-            "afternoon": {
-                "enabled": config.afternoon_enabled if config else True,
-                "check_in": None,
-                "status": None
-            },
-            "evening": {
-                "enabled": config.evening_enabled if config else True,
-                "check_in": None,
-                "status": None
-            }
+            "morning_check_in": None,
+            "morning_status": None,
+            "afternoon_check_in": None,
+            "afternoon_status": None,
+            "evening_check_in": None,
+            "evening_status": None,
+            "is_overridden": False
         }
 
     return {
         "date": attendance.date.isoformat(),
         "day_status": attendance.day_status,
-        "morning": {
-            "enabled": config.morning_enabled if config else True,
-            "check_in": attendance.morning_check_in.isoformat() if attendance.morning_check_in else None,
-            "status": attendance.morning_status
-        },
-        "afternoon": {
-            "enabled": config.afternoon_enabled if config else True,
-            "check_in": attendance.afternoon_check_in.isoformat() if attendance.afternoon_check_in else None,
-            "status": attendance.afternoon_status
-        },
-        "evening": {
-            "enabled": config.evening_enabled if config else True,
-            "check_in": attendance.evening_check_out.isoformat() if attendance.evening_check_out else None,
-            "status": attendance.evening_status
-        },
+        "morning_check_in": attendance.morning_check_in.isoformat() if attendance.morning_check_in else None,
+        "morning_status": attendance.morning_status,
+        "afternoon_check_in": attendance.afternoon_check_in.isoformat() if attendance.afternoon_check_in else None,
+        "afternoon_status": attendance.afternoon_status,
+        "evening_check_in": attendance.evening_check_out.isoformat() if attendance.evening_check_out else None,
+        "evening_status": attendance.evening_status,
         "notes": attendance.notes,
         "is_overridden": attendance.is_overridden
     }
@@ -326,18 +303,12 @@ async def get_my_attendance_history(
         result.append({
             "date": record.date.isoformat(),
             "day_status": record.day_status,
-            "morning": {
-                "check_in": record.morning_check_in.isoformat() if record.morning_check_in else None,
-                "status": record.morning_status
-            },
-            "afternoon": {
-                "check_in": record.afternoon_check_in.isoformat() if record.afternoon_check_in else None,
-                "status": record.afternoon_status
-            },
-            "evening": {
-                "check_in": record.evening_check_out.isoformat() if record.evening_check_out else None,
-                "status": record.evening_status
-            },
+            "morning_check_in": record.morning_check_in.isoformat() if record.morning_check_in else None,
+            "morning_status": record.morning_status,
+            "afternoon_check_in": record.afternoon_check_in.isoformat() if record.afternoon_check_in else None,
+            "afternoon_status": record.afternoon_status,
+            "evening_check_in": record.evening_check_out.isoformat() if record.evening_check_out else None,
+            "evening_status": record.evening_status,
             "is_overridden": record.is_overridden
         })
 

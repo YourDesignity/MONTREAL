@@ -434,7 +434,7 @@ function ManagerMyAttendancePage() {
   return (
     <div className="layout-content">
       {/* Header */}
-      <Card bordered={false} className="criclebox mb-24" style={{ marginBottom: 24 }}>
+      <Card variant="borderless" className="criclebox mb-24" style={{ marginBottom: 24 }}>
         <Row align="middle" justify="space-between">
           <Col>
             <Title level={4} style={{ margin: 0 }}>
@@ -458,7 +458,7 @@ function ManagerMyAttendancePage() {
           loadingToday ? <Spin size="small" /> : (
             <Alert
               type={dayStatusCfg.type}
-              message={<Space>{dayStatusCfg.icon}<span>{dayStatusCfg.text}</span></Space>}
+              title={<Space>{dayStatusCfg.icon}<span>{dayStatusCfg.text}</span></Space>}
               style={{ padding: '2px 10px', marginBottom: 0 }}
             />
           )
@@ -498,7 +498,7 @@ function ManagerMyAttendancePage() {
       >
         <Row gutter={[16, 16]}>
           <Col xs={12} sm={6}>
-            <Card bordered={false} style={{ textAlign: 'center', background: '#f6ffed' }}>
+            <Card variant="borderless" style={{ textAlign: 'center', background: '#f6ffed' }}>
               <Statistic
                 title="Full Days"
                 value={fullDays}
@@ -517,7 +517,7 @@ function ManagerMyAttendancePage() {
             </Card>
           </Col>
           <Col xs={12} sm={6}>
-            <Card bordered={false} style={{ textAlign: 'center', background: '#fffbe6' }}>
+            <Card variant="borderless" style={{ textAlign: 'center', background: '#fffbe6' }}>
               <Statistic
                 title="Partial Days"
                 value={partialDays}
@@ -536,7 +536,7 @@ function ManagerMyAttendancePage() {
             </Card>
           </Col>
           <Col xs={12} sm={6}>
-            <Card bordered={false} style={{ textAlign: 'center', background: '#fff2f0' }}>
+            <Card variant="borderless" style={{ textAlign: 'center', background: '#fff2f0' }}>
               <Statistic
                 title="Absent Days"
                 value={absentDays}
@@ -555,7 +555,7 @@ function ManagerMyAttendancePage() {
             </Card>
           </Col>
           <Col xs={12} sm={6}>
-            <Card bordered={false} style={{ textAlign: 'center', background: '#e6f7ff' }}>
+            <Card variant="borderless" style={{ textAlign: 'center', background: '#e6f7ff' }}>
               <Statistic
                 title="On-Time Rate"
                 value={onTimeRate}
@@ -666,7 +666,7 @@ function ManagerMyAttendancePage() {
                   type="info"
                   icon={<SettingOutlined />}
                   showIcon
-                  message="⚠️ Only admins can modify your time windows."
+                  title="⚠️ Only admins can modify your time windows."
                   style={{ marginTop: 8 }}
                 />
               </Space>
