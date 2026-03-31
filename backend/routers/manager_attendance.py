@@ -30,20 +30,17 @@ class OverrideAttendanceRequest(BaseModel):
     reason: str
 
 
+class SegmentConfig(BaseModel):
+    enabled: Optional[bool] = None
+    start_time: Optional[str] = None  # HH:MM
+    end_time: Optional[str] = None    # HH:MM
+
+
 class UpdateAttendanceConfigRequest(BaseModel):
-    morning_enabled: Optional[bool] = None
-    morning_window_start: Optional[str] = None  # HH:MM
-    morning_window_end: Optional[str] = None    # HH:MM
-
-    afternoon_enabled: Optional[bool] = None
-    afternoon_window_start: Optional[str] = None
-    afternoon_window_end: Optional[str] = None
-
-    evening_enabled: Optional[bool] = None
-    evening_window_start: Optional[str] = None
-    evening_window_end: Optional[str] = None
-
     require_all_segments: Optional[bool] = None
+    morning: Optional[SegmentConfig] = None
+    afternoon: Optional[SegmentConfig] = None
+    evening: Optional[SegmentConfig] = None
 
 # =============================================================================
 # HELPER FUNCTIONS
@@ -485,8 +482,17 @@ async def update_manager_attendance_config(
         )
 
     update_data = payload.dict(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(config, field, value)
+    for segment in ["morning", "afternoon", "evening"]:
+        seg_data = update_data.get(segment)
+        if seg_data is not None:
+            if "enabled" in seg_data:
+                setattr(config, f"{segment}_enabled", seg_data["enabled"])
+            if "start_time" in seg_data and seg_data["start_time"] is not None:
+                setattr(config, f"{segment}_window_start", seg_data["start_time"])
+            if "end_time" in seg_data and seg_data["end_time"] is not None:
+                setattr(config, f"{segment}_window_end", seg_data["end_time"])
+    if "require_all_segments" in update_data:
+        config.require_all_segments = update_data["require_all_segments"]
 
     config.configured_by_admin_id = current_user.get("id", 1)
     config.updated_at = datetime.now()
@@ -516,30 +522,30 @@ async def get_manager_attendance_config(
     if not config:
         return {
             "manager_id": manager_id,
-            "morning_enabled": True,
-            "morning_window_start": "08:00",
-            "morning_window_end": "09:30",
-            "afternoon_enabled": True,
-            "afternoon_window_start": "13:00",
-            "afternoon_window_end": "14:00",
-            "evening_enabled": True,
-            "evening_window_start": "17:00",
-            "evening_window_end": "18:30",
-            "require_all_segments": True
+            "require_all_segments": True,
+            "morning": {"enabled": True, "start_time": "08:00", "end_time": "09:30"},
+            "afternoon": {"enabled": True, "start_time": "13:00", "end_time": "14:00"},
+            "evening": {"enabled": True, "start_time": "17:00", "end_time": "18:30"},
         }
 
     return {
         "manager_id": manager_id,
-        "morning_enabled": config.morning_enabled,
-        "morning_window_start": config.morning_window_start if config.morning_enabled else None,
-        "morning_window_end": config.morning_window_end if config.morning_enabled else None,
-        "afternoon_enabled": config.afternoon_enabled,
-        "afternoon_window_start": config.afternoon_window_start if config.afternoon_enabled else None,
-        "afternoon_window_end": config.afternoon_window_end if config.afternoon_enabled else None,
-        "evening_enabled": config.evening_enabled,
-        "evening_window_start": config.evening_window_start if config.evening_enabled else None,
-        "evening_window_end": config.evening_window_end if config.evening_enabled else None,
         "require_all_segments": config.require_all_segments,
+        "morning": {
+            "enabled": config.morning_enabled,
+            "start_time": config.morning_window_start,
+            "end_time": config.morning_window_end,
+        },
+        "afternoon": {
+            "enabled": config.afternoon_enabled,
+            "start_time": config.afternoon_window_start,
+            "end_time": config.afternoon_window_end,
+        },
+        "evening": {
+            "enabled": config.evening_enabled,
+            "start_time": config.evening_window_start,
+            "end_time": config.evening_window_end,
+        },
         "configured_by": config.configured_by_admin_id,
         "last_updated": config.updated_at.isoformat()
     }
