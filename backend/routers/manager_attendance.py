@@ -56,6 +56,15 @@ def get_check_in_field(segment: str) -> str:
     return f"{segment}_check_in"
 
 
+def _parse_time_str(t: str) -> time:
+    """Parse a time string in 'HH:MM' or 'HH:MM:SS' format to a time object."""
+    try:
+        parts = t.split(":")
+        return time(int(parts[0]), int(parts[1]))
+    except (ValueError, IndexError, AttributeError):
+        raise ValueError(f"Invalid time format '{t}'. Expected 'HH:MM' or 'HH:MM:SS'.")
+
+
 def calculate_day_status(attendance: ManagerAttendance, config: ManagerAttendanceConfig) -> str:
     """Calculate overall day status based on segment statuses."""
     enabled_segments = []
@@ -111,14 +120,14 @@ async def get_my_attendance_config(
     return {
         "manager_id": me.uid,
         "morning_enabled": config.morning_enabled,
-        "morning_window_start": config.morning_window_start.isoformat() if config.morning_enabled else None,
-        "morning_window_end": config.morning_window_end.isoformat() if config.morning_enabled else None,
+        "morning_window_start": config.morning_window_start if config.morning_enabled else None,
+        "morning_window_end": config.morning_window_end if config.morning_enabled else None,
         "afternoon_enabled": config.afternoon_enabled,
-        "afternoon_window_start": config.afternoon_window_start.isoformat() if config.afternoon_enabled else None,
-        "afternoon_window_end": config.afternoon_window_end.isoformat() if config.afternoon_enabled else None,
+        "afternoon_window_start": config.afternoon_window_start if config.afternoon_enabled else None,
+        "afternoon_window_end": config.afternoon_window_end if config.afternoon_enabled else None,
         "evening_enabled": config.evening_enabled,
-        "evening_window_start": config.evening_window_start.isoformat() if config.evening_enabled else None,
-        "evening_window_end": config.evening_window_end.isoformat() if config.evening_enabled else None,
+        "evening_window_start": config.evening_window_start if config.evening_enabled else None,
+        "evening_window_end": config.evening_window_end if config.evening_enabled else None,
         "require_all_segments": config.require_all_segments
     }
 
@@ -162,11 +171,15 @@ async def manager_check_in(
     current_time = now.time()
     current_date = now.date()
 
-    if not (window_start <= current_time <= window_end):
+    # Parse window strings ("HH:MM") to time objects for comparison
+    window_start_time = _parse_time_str(window_start)
+    window_end_time = _parse_time_str(window_end)
+
+    if not (window_start_time <= current_time <= window_end_time):
         raise HTTPException(
             400,
             f"Check-in window closed. {segment.capitalize()} window: "
-            f"{window_start.strftime('%H:%M')} - {window_end.strftime('%H:%M')}"
+            f"{window_start_time.strftime('%H:%M')} - {window_end_time.strftime('%H:%M')}"
         )
 
     attendance = await ManagerAttendance.find_one(
@@ -192,7 +205,7 @@ async def manager_check_in(
     setattr(attendance, check_in_field, now)
 
     grace_period = timedelta(minutes=10)
-    grace_end = (datetime.combine(current_date, window_start) + grace_period).time()
+    grace_end = (datetime.combine(current_date, window_start_time) + grace_period).time()
 
     if current_time <= grace_end:
         status = "On Time"
@@ -473,11 +486,6 @@ async def update_manager_attendance_config(
 
     update_data = payload.dict(exclude_unset=True)
     for field, value in update_data.items():
-        if "window_start" in field or "window_end" in field:
-            if isinstance(value, str):
-                from datetime import time as time_type
-                parsed = datetime.strptime(value, "%H:%M")
-                value = time_type(parsed.hour, parsed.minute)
         setattr(config, field, value)
 
     config.configured_by_admin_id = current_user.get("id", 1)
@@ -523,14 +531,14 @@ async def get_manager_attendance_config(
     return {
         "manager_id": manager_id,
         "morning_enabled": config.morning_enabled,
-        "morning_window_start": config.morning_window_start.isoformat() if config.morning_enabled else None,
-        "morning_window_end": config.morning_window_end.isoformat() if config.morning_enabled else None,
+        "morning_window_start": config.morning_window_start if config.morning_enabled else None,
+        "morning_window_end": config.morning_window_end if config.morning_enabled else None,
         "afternoon_enabled": config.afternoon_enabled,
-        "afternoon_window_start": config.afternoon_window_start.isoformat() if config.afternoon_enabled else None,
-        "afternoon_window_end": config.afternoon_window_end.isoformat() if config.afternoon_enabled else None,
+        "afternoon_window_start": config.afternoon_window_start if config.afternoon_enabled else None,
+        "afternoon_window_end": config.afternoon_window_end if config.afternoon_enabled else None,
         "evening_enabled": config.evening_enabled,
-        "evening_window_start": config.evening_window_start.isoformat() if config.evening_enabled else None,
-        "evening_window_end": config.evening_window_end.isoformat() if config.evening_enabled else None,
+        "evening_window_start": config.evening_window_start if config.evening_enabled else None,
+        "evening_window_end": config.evening_window_end if config.evening_enabled else None,
         "require_all_segments": config.require_all_segments,
         "configured_by": config.configured_by_admin_id,
         "last_updated": config.updated_at.isoformat()
