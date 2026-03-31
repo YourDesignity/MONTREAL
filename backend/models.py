@@ -405,18 +405,18 @@ class ManagerAttendanceConfig(Document):
 
     # Morning Segment
     morning_enabled: bool = True
-    morning_window_start: time = time(8, 0)
-    morning_window_end: time = time(9, 30)
+    morning_window_start: str = "08:00"  # HH:MM (24-hour)
+    morning_window_end: str = "09:30"    # HH:MM (24-hour)
 
     # Afternoon Segment
     afternoon_enabled: bool = True
-    afternoon_window_start: time = time(13, 0)
-    afternoon_window_end: time = time(14, 0)
+    afternoon_window_start: str = "13:00"  # HH:MM (24-hour)
+    afternoon_window_end: str = "14:00"    # HH:MM (24-hour)
 
     # Evening Segment
     evening_enabled: bool = True
-    evening_window_start: time = time(17, 0)
-    evening_window_end: time = time(18, 30)
+    evening_window_start: str = "17:00"  # HH:MM (24-hour)
+    evening_window_end: str = "18:30"    # HH:MM (24-hour)
 
     # Rules
     require_all_segments: bool = True
@@ -425,12 +425,6 @@ class ManagerAttendanceConfig(Document):
     configured_by_admin_id: int
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
-
-    class Config:
-        json_encoders = {
-            time: lambda v: v.isoformat() if v else None,
-            datetime: lambda v: v.isoformat() if v else None
-        }
 
     class Settings:
         name = "manager_attendance_configs"

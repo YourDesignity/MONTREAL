@@ -66,18 +66,28 @@ app = FastAPI(
 )
 
 # --- CORS CONFIGURATION ---
-# We allow specific origins to prevent the CORS policy errors you encountered
+# Enhanced CORS to handle all frontend scenarios including OPTIONS preflight
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:1420", 
-        "http://127.0.0.1:1420", 
+        "http://localhost:1420",
+        "http://127.0.0.1:1420",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-    ], 
+        "http://localhost:5173",  # Vite default
+        "http://127.0.0.1:5173",
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allow_headers=[
+        "Authorization",
+        "Content-Type",
+        "Accept",
+        "Origin",
+        "X-Requested-With",
+    ],
+    expose_headers=["*"],
+    max_age=600,  # Cache preflight for 10 minutes
 )
 
 logger.info("CORS Configured for Frontend Development.")
