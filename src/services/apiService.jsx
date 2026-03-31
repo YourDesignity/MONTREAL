@@ -190,6 +190,18 @@ export const updateManagerAttendanceConfig = (id, data) => fetchWithAuth(`/manag
 export const getManagerAttendanceAll = (date) => fetchWithAuth(`/managers/attendance/all?date=${date}`);
 export const overrideManagerAttendance = (data) => fetchWithAuth('/managers/attendance/override', { method: 'POST', body: JSON.stringify(data) });
 
+// --- 10. MANAGER SELF-SERVICE ATTENDANCE ---
+export const getMyAttendanceConfig = () => fetchWithAuth('/managers/attendance/my-config');
+export const checkInSegment = (segment) => fetchWithAuth(`/managers/attendance/check-in/${segment}`, { method: 'POST' });
+export const getMyTodayAttendance = () => fetchWithAuth('/managers/attendance/my-today');
+export const getMyAttendanceHistory = (startDate, endDate) => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    const query = params.toString();
+    return fetchWithAuth(`/managers/attendance/my-history${query ? `?${query}` : ''}`);
+};
+
 export const getInventory = () => fetchWithAuth('/inventory/');
 export const addInventoryItem = (data) => fetchWithAuth('/inventory/', { method: 'POST', body: JSON.stringify(data) });
 export const deleteInventoryItem = (id) => fetchWithAuth(`/inventory/${id}`, { method: 'DELETE' });
@@ -208,6 +220,7 @@ const apiService = {
     getManagerProfiles, getManagerProfileById, createManagerProfile, updateManagerProfile, deleteManagerProfile,
     updateManagerCredentials, updateManagerSites,
     getManagerAttendanceConfig, updateManagerAttendanceConfig, getManagerAttendanceAll, overrideManagerAttendance,
+    getMyAttendanceConfig, checkInSegment, getMyTodayAttendance, getMyAttendanceHistory,
 };
 
 export default apiService;

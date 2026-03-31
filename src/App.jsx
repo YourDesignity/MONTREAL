@@ -25,6 +25,7 @@ import ManagersPage from './pages/ManagersPage';
 import CreateManagerPage from './pages/CreateManagerPage';
 import EditManagerPage from './pages/EditManagerPage';
 import ManagerAttendanceAdminPage from './pages/ManagerAttendanceAdminPage';
+import ManagerMyAttendancePage from './pages/ManagerMyAttendancePage';
 import PayslipPage from './pages/PayslipPage';
 import OvertimePage from './pages/OvertimePage';
 import DeductionsPage from './pages/DeductionsPage';
@@ -93,6 +94,7 @@ const App = () => {
             <Route path="managers/create" element={<CreateManagerPage />} />
             <Route path="managers/edit/:id" element={<EditManagerPage />} />
             <Route path="manager-attendance" element={<ManagerAttendanceAdminPage />} />
+            <Route path="my-attendance" element={<ManagerMyAttendancePage />} />
             <Route path="messages" element={<MessagePage />} />
             <Route path="manager-messages" element={<ManagerMessagesPage />} />
           </Route>

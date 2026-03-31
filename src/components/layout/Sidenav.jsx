@@ -8,6 +8,7 @@ import {
   CarOutlined,
   PieChartOutlined,
   TeamOutlined,
+  ClockCircleOutlined,
 } from "@ant-design/icons";
 import { useAuth } from "../../context/AuthContext";
 
@@ -18,6 +19,8 @@ function Sidenav({ color }) {
   const items = useMemo(() => {
     const rawMenuItems = [
       { path: "/dashboard", name: "Dashboard", icon: <HomeOutlined />, perm: null },
+      // My Attendance is shown prominently for Site Managers
+      ...(user?.role === 'Site Manager' ? [{ path: "/my-attendance", name: "My Attendance", icon: <ClockCircleOutlined />, perm: null }] : []),
       { path: "/employees", name: "Employees", icon: <UserOutlined />, perm: null },
       { path: "/managers", name: "Managers", icon: <TeamOutlined />, perm: 'admin:view_all' },
       { path: "/manager-attendance", name: "Manager Attendance", icon: <CalendarOutlined />, perm: 'admin:view_all' },
