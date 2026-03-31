@@ -6,7 +6,8 @@ import {
   MessageOutlined, ProjectOutlined, SafetyCertificateOutlined,
   DatabaseOutlined, GoldOutlined, DollarOutlined,
   CarOutlined,
-  PieChartOutlined 
+  PieChartOutlined,
+  TeamOutlined,
 } from "@ant-design/icons";
 import { useAuth } from "../../context/AuthContext";
 
@@ -18,6 +19,8 @@ function Sidenav({ color }) {
     const rawMenuItems = [
       { path: "/dashboard", name: "Dashboard", icon: <HomeOutlined />, perm: null },
       { path: "/employees", name: "Employees", icon: <UserOutlined />, perm: null },
+      { path: "/managers", name: "Managers", icon: <TeamOutlined />, perm: 'admin:view_all' },
+      { path: "/manager-attendance", name: "Manager Attendance", icon: <CalendarOutlined />, perm: 'admin:view_all' },
       { path: "/vehicles", name: "Vehicles", icon: <CarOutlined />, perm: null },
       { path: "/attendance", name: "Attendance", icon: <CalendarOutlined />, perm: 'attendance:update' },
       { path: "/duty-list", name: "Duty List", icon: <ProfileOutlined />, perm: 'schedule:edit' },
