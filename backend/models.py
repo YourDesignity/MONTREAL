@@ -33,7 +33,8 @@ class Admin(Document, MemoryNode):
     designation: str
     role: str                       
     permissions: List[str] = []     
-    assigned_site_uids: List[int] = [] 
+    assigned_site_uids: List[int] = []
+    has_manager_profile: bool = False
     class Settings:
         name = "admins"
 
@@ -324,6 +325,51 @@ class Message(Document, MemoryNode):
         indexes = [
             [("conversation_id", 1), ("timestamp", -1)],
             [("sender_id", 1)]
+        ]
+
+# =============================================================================
+# 8. MANAGER PROFILE
+# =============================================================================
+
+class ManagerProfile(Document):
+    """
+    Manager Profile - Stores detailed information about Site Managers.
+    Linked to Admin table via admin_id.
+    """
+    uid: int
+    admin_id: int  # Foreign key to Admin.uid
+
+    # Required Fields
+    full_name: str
+    designation: str
+    monthly_salary: float
+    allowances: float = 0.0
+    date_of_joining: datetime
+    is_active: bool = True
+
+    # Optional Fields
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    emergency_contact: Optional[str] = None
+    emergency_phone: Optional[str] = None
+    bank_name: Optional[str] = None
+    account_number: Optional[str] = None
+    iban: Optional[str] = None
+    nationality: Optional[str] = None
+    passport_number: Optional[str] = None
+    civil_id: Optional[str] = None
+
+    # Metadata
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
+    created_by_admin_id: int
+
+    class Settings:
+        name = "manager_profiles"
+        indexes = [
+            "admin_id",
+            "full_name",
+            "is_active"
         ]
 
 
