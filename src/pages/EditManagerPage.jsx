@@ -194,7 +194,7 @@ function CredentialsTab({ managerId, initialEmail }) {
         type="warning"
         icon={<WarningOutlined />}
         showIcon
-        message="Manager will be logged out after a password change."
+        title="Manager will be logged out after a password change."
         style={{ marginBottom: 24 }}
       />
       <Form.Item
@@ -376,7 +376,7 @@ function AttendanceConfigTab({ managerId }) {
         type="info"
         showIcon
         icon={<ClockCircleOutlined />}
-        message="Manager can only check in during these time windows. After the window closes, only admins can override."
+        title="Manager can only check in during these time windows. After the window closes, only admins can override."
         style={{ marginBottom: 24 }}
       />
 
@@ -514,7 +514,7 @@ function EditManagerPage() {
 
   return (
     <div className="layout-content">
-      <Card bordered={false} className="criclebox mb-24" style={{ marginBottom: 24 }}>
+      <Card variant="borderless" className="criclebox mb-24" style={{ marginBottom: 24 }}>
         <Row align="middle" justify="space-between">
           <Col>
             <Title level={4} style={{ margin: 0 }}>
@@ -532,7 +532,7 @@ function EditManagerPage() {
         </Row>
       </Card>
 
-      <Card bordered={false} className="criclebox">
+      <Card variant="borderless" className="criclebox">
         <Tabs
           activeKey={activeTab}
           onChange={handleTabChange}

@@ -49,7 +49,7 @@ function ManagersPage() {
     if (!deleteTarget) return;
     setDeleteLoading(true);
     try {
-      await deleteManagerProfile(deleteTarget.id);
+      await deleteManagerProfile(deleteTarget.admin_id);
       message.success('Manager deleted successfully');
       setDeleteTarget(null);
       fetchManagers();
@@ -66,19 +66,19 @@ function ManagersPage() {
         key: 'edit',
         icon: <EditOutlined />,
         label: 'Edit Profile',
-        onClick: () => navigate(`/managers/edit/${record.id}`),
+        onClick: () => navigate(`/managers/edit/${record.admin_id}`),
       },
       {
         key: 'attendance',
         icon: <CalendarOutlined />,
         label: 'View Attendance',
-        onClick: () => navigate(`/manager-attendance?manager=${record.id}`),
+        onClick: () => navigate(`/manager-attendance?manager=${record.admin_id}`),
       },
       {
         key: 'config',
         icon: <SettingOutlined />,
         label: 'Attendance Config',
-        onClick: () => navigate(`/managers/edit/${record.id}?tab=attendance`),
+        onClick: () => navigate(`/managers/edit/${record.admin_id}?tab=attendance`),
       },
       { type: 'divider' },
       {
@@ -99,8 +99,8 @@ function ManagersPage() {
   const columns = [
     {
       title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
+      dataIndex: 'admin_id',
+      key: 'admin_id',
       width: 60,
       render: (id) => <Text type="secondary">#{id}</Text>,
     },
@@ -164,7 +164,7 @@ function ManagersPage() {
 
   return (
     <div className="layout-content">
-      <Card bordered={false} className="criclebox mb-24" style={{ marginBottom: 24 }}>
+      <Card variant="borderless" className="criclebox mb-24" style={{ marginBottom: 24 }}>
         <Row align="middle" justify="space-between" wrap={false}>
           <Col>
             <Title level={4} style={{ margin: 0 }}>
@@ -188,7 +188,7 @@ function ManagersPage() {
 
       <Row gutter={[24, 0]}>
         <Col xs={24}>
-          <Card bordered={false} className="criclebox tablespace mb-24">
+          <Card variant="borderless" className="criclebox tablespace mb-24">
             <div style={{ padding: '12px 24px' }}>
               <Input
                 placeholder="Search by name or email…"
@@ -211,7 +211,7 @@ function ManagersPage() {
               <Table
                 columns={columns}
                 dataSource={filteredManagers}
-                rowKey="id"
+                rowKey="admin_id"
                 loading={loading}
                 pagination={{ pageSize: 10 }}
                 className="ant-border-space"
