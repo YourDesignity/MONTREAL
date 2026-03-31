@@ -590,8 +590,10 @@ async def get_manager_recipients(current_user: dict = Depends(get_current_active
 
     # Get all admins
     admins = await Admin.find(
-        Admin.is_active == True,
-        {"role": {"$in": ["SuperAdmin", "Admin"]}}
+        {
+            "is_active": True,
+            "role": {"$in": ["SuperAdmin", "Admin"]}
+        }
     ).to_list()
 
     # Get employees assigned to this manager via DutyAssignment
@@ -604,8 +606,10 @@ async def get_manager_recipients(current_user: dict = Depends(get_current_active
     employees = []
     if employee_ids:
         employees = await Employee.find(
-            Employee.uid.in_(employee_ids),
-            Employee.is_active == True
+            {
+                "uid": {"$in": employee_ids},
+                "is_active": True
+            }
         ).to_list()
 
     result = {
