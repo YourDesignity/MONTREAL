@@ -17,17 +17,22 @@ function CompanySettingsPage() {
         try {
             const response = await getCompanySettings();
             setSettings(response);
-            form.setFieldsValue(response);
         } catch (err) {
             message.error('Failed to load settings: ' + (err.message || 'Unknown error'));
         } finally {
             setLoading(false);
         }
-    }, [form]);
+    }, []);
 
     useEffect(() => {
         fetchSettings();
     }, [fetchSettings]);
+
+    useEffect(() => {
+        if (settings) {
+            form.setFieldsValue(settings);
+        }
+    }, [settings, form]);
 
     const handleSave = async () => {
         try {
@@ -45,7 +50,7 @@ function CompanySettingsPage() {
 
     return (
         <div className="layout-content">
-            <Card bordered={false} style={{ marginBottom: 24 }}>
+            <Card variant="borderless" style={{ marginBottom: 24 }}>
                 <Title level={4} style={{ margin: 0 }}>
                     <SettingOutlined style={{ marginRight: 8 }} />
                     Company Settings
@@ -53,17 +58,17 @@ function CompanySettingsPage() {
                 <Text type="secondary">Configure salary calculation parameters and business rules</Text>
             </Card>
 
-            <Card loading={loading}>
+            <Card variant="borderless" loading={loading}>
                 <Alert
                     type="warning"
                     showIcon
-                    message="Admin Only"
+                    title="Admin Only"
                     description="These settings affect all payslip calculations. Changes apply to future payslips immediately."
                     style={{ marginBottom: 24 }}
                 />
 
                 <Form form={form} layout="vertical" onFinish={handleSave}>
-                    <Divider orientation="left">
+                    <Divider titlePlacement="left">
                         <ClockCircleOutlined /> Overtime Multipliers
                     </Divider>
 
@@ -81,7 +86,7 @@ function CompanySettingsPage() {
                                     max={3.0}
                                     step={0.05}
                                     precision={2}
-                                    addonBefore="×"
+                                    prefix="×"
                                     placeholder="1.25"
                                 />
                             </Form.Item>
@@ -103,7 +108,7 @@ function CompanySettingsPage() {
                                     max={3.0}
                                     step={0.05}
                                     precision={2}
-                                    addonBefore="×"
+                                    prefix="×"
                                     placeholder="1.50"
                                 />
                             </Form.Item>
@@ -113,7 +118,7 @@ function CompanySettingsPage() {
                         </Col>
                     </Row>
 
-                    <Divider orientation="left">
+                    <Divider titlePlacement="left">
                         <DollarOutlined /> Work Hours
                     </Divider>
 
@@ -130,7 +135,7 @@ function CompanySettingsPage() {
                                     min={6}
                                     max={12}
                                     step={1}
-                                    addonAfter="hours"
+                                    suffix="hours"
                                     placeholder="8"
                                 />
                             </Form.Item>
@@ -159,7 +164,7 @@ function CompanySettingsPage() {
                     {settings?.last_updated && (
                         <Alert
                             type="info"
-                            message={`Last updated: ${new Date(settings.last_updated).toLocaleString()} by ${settings.updated_by || 'Admin'}`}
+                            title={`Last updated: ${new Date(settings.last_updated).toLocaleString()} by ${settings.updated_by || 'Admin'}`}
                             style={{ marginTop: 24, marginBottom: 16 }}
                         />
                     )}
