@@ -1,4 +1,5 @@
 from typing import List, Optional
+from datetime import date
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 
 # =============================================================================
@@ -45,23 +46,70 @@ class EmployeeFull(EmployeeBase):
     for manual serialization; do NOT manually build dicts with ``"id": obj.uid``
     as that bypasses Pydantic and breaks schema validation.
     """
+    # Financial
     basic_salary: float
     allowance: float
     standard_work_days: int
     default_hourly_rate: float
+
+    # Employee type
+    employee_type: str = "Company"
+
+    # Personal details
+    date_of_birth: Optional[date] = None
+    nationality: Optional[str] = None
+    permanent_address: Optional[str] = None
+
+    # Contact information
+    phone_kuwait: Optional[str] = None
+    phone_home_country: Optional[str] = None
+    emergency_contact_name: Optional[str] = None
+    emergency_contact_number: Optional[str] = None
+
+    # Identity documents
+    civil_id_number: Optional[str] = None
+    civil_id_expiry: Optional[date] = None
+    civil_id_document_path: Optional[str] = None
+    passport_number: Optional[str] = None
+    passport_expiry: Optional[date] = None
+    passport_document_path: Optional[str] = None
+    visa_document_path: Optional[str] = None
+
+    # Photo
+    photo_path: Optional[str] = None
+
+    # Employment details
+    date_of_joining: Optional[date] = None
+    contract_end_date: Optional[date] = None
+
+    # Deprecated document paths (kept for backward compatibility)
     passport_path: Optional[str] = None
     visa_path: Optional[str] = None
-    manager_id: Optional[int] = None 
+
+    manager_id: Optional[int] = None
     model_config = ConfigDict(from_attributes=True)
 
 class EmployeeCreate(BaseModel):
     name: str
     designation: str
-    basic_salary: float
-    allowance: float
-    standard_work_days: int
+    basic_salary: float = 0.0
+    allowance: float = 0.0
+    standard_work_days: int = 28
     status: str = "Active"
+    employee_type: str = "Company"
     default_hourly_rate: float = 0.0
+    nationality: Optional[str] = None
+    permanent_address: Optional[str] = None
+    phone_kuwait: Optional[str] = None
+    phone_home_country: Optional[str] = None
+    emergency_contact_name: Optional[str] = None
+    emergency_contact_number: Optional[str] = None
+    civil_id_number: Optional[str] = None
+    civil_id_expiry: Optional[date] = None
+    passport_number: Optional[str] = None
+    passport_expiry: Optional[date] = None
+    date_of_joining: Optional[date] = None
+    contract_end_date: Optional[date] = None
 
 class EmployeeUpdate(BaseModel):
     name: Optional[str] = None
@@ -71,6 +119,21 @@ class EmployeeUpdate(BaseModel):
     standard_work_days: Optional[int] = None
     status: Optional[str] = None
     manager_id: Optional[int] = None
+    employee_type: Optional[str] = None
+    date_of_birth: Optional[date] = None
+    nationality: Optional[str] = None
+    permanent_address: Optional[str] = None
+    phone_kuwait: Optional[str] = None
+    phone_home_country: Optional[str] = None
+    emergency_contact_name: Optional[str] = None
+    emergency_contact_number: Optional[str] = None
+    civil_id_number: Optional[str] = None
+    civil_id_expiry: Optional[date] = None
+    passport_number: Optional[str] = None
+    passport_expiry: Optional[date] = None
+    default_hourly_rate: Optional[float] = None
+    date_of_joining: Optional[date] = None
+    contract_end_date: Optional[date] = None
 
 # =============================================================================
 # 3. ADMIN SCHEMAS

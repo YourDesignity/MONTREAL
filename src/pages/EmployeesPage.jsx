@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import dayjs from 'dayjs';
 import { 
-  Table, Card, Input, Select, Button, Space, Avatar, Typography, Tag, Row, Col, Modal, Form, message 
+  Table, Card, Input, Select, Button, Space, Avatar, Typography, Tag, Row, Col, Modal, Form, message, Badge, Tooltip
 } from 'antd';
 import { 
   SearchOutlined, PlusOutlined, FileTextOutlined, 
-  EditOutlined, DeleteOutlined, UserOutlined 
+  EditOutlined, DeleteOutlined, UserOutlined, EyeOutlined, WarningOutlined
 } from '@ant-design/icons';
 // --- Services ---
 import { 
@@ -16,8 +17,13 @@ import websocketService from '../services/websocketService';
 import { useAuth } from '../context/AuthContext'; 
 
 // --- Typography Extraction ---
-const { Title, Text } = Typography; // Added Title here
+const { Title, Text } = Typography;
 const { Option } = Select;
+
+function checkDocExpiry(dateStr) {
+    if (!dateStr) return false;
+    return dayjs(dateStr).diff(dayjs(), 'day') < 30;
+}
 
 function EmployeesPage() {
     const navigate = useNavigate();
@@ -30,6 +36,7 @@ function EmployeesPage() {
     
     const [searchText, setSearchText] = useState('');
     const [selectedDesignation, setSelectedDesignation] = useState('all');
+    const [selectedType, setSelectedType] = useState('all');
     const [selectedRowKeys, setSelectedRowKeys] = useState([]);
 
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -95,9 +102,10 @@ function EmployeesPage() {
             const matchesSearch = emp.name?.toLowerCase().includes(searchText.toLowerCase()) || 
                                   emp.designation?.toLowerCase().includes(searchText.toLowerCase());
             const matchesRole = selectedDesignation === 'all' || emp.designation === selectedDesignation;
-            return matchesSearch && matchesRole;
+            const matchesType = selectedType === 'all' || emp.employee_type === selectedType;
+            return matchesSearch && matchesRole && matchesType;
         });
-    }, [employees, searchText, selectedDesignation]);
+    }, [employees, searchText, selectedDesignation, selectedType]);
 
     // --- 4. Handlers ---
     const handleCreatePayslips = async () => {
@@ -165,20 +173,62 @@ function EmployeesPage() {
             )
         },
         {
+            title: 'Type',
+            dataIndex: 'employee_type',
+            key: 'employee_type',
+            render: (type) => (
+                <Tag color={type === 'Outsourced' ? 'orange' : 'blue'}>
+                    {type || 'Company'}
+                </Tag>
+            )
+        },
+        {
             title: 'Finance Status',
             key: 'finance',
             render: (_, r) => (
                 <Space>
-                    <Tag color="blue">Rate: ${r.basic_salary}</Tag>
-                    {r.allowance > 0 && <Tag color="cyan">Allow: ${r.allowance}</Tag>}
+                    <Tag color="blue">
+                        {r.employee_type === 'Outsourced'
+                            ? `Rate: ${(r.default_hourly_rate ?? 0).toFixed(4)} KD/hr`
+                            : `Salary: ${r.basic_salary} KD`}
+                    </Tag>
+                    {r.allowance > 0 && <Tag color="cyan">Allow: {r.allowance} KD</Tag>}
                 </Space>
             )
+        },
+        {
+            title: 'Documents',
+            key: 'documents',
+            render: (_, record) => {
+                const civilExpiring = checkDocExpiry(record.civil_id_expiry);
+                const passportExpiring = checkDocExpiry(record.passport_expiry);
+                if (!civilExpiring && !passportExpiring) return <Text type="secondary" style={{ fontSize: 12 }}>—</Text>;
+                return (
+                    <Space size={4}>
+                        {civilExpiring && (
+                            <Tooltip title={`Civil ID expiry: ${record.civil_id_expiry || 'expired'}`}>
+                                <Tag color="red" icon={<WarningOutlined />}>Civil ID</Tag>
+                            </Tooltip>
+                        )}
+                        {passportExpiring && (
+                            <Tooltip title={`Passport expiry: ${record.passport_expiry || 'expired'}`}>
+                                <Tag color="red" icon={<WarningOutlined />}>Passport</Tag>
+                            </Tooltip>
+                        )}
+                    </Space>
+                );
+            }
         },
         {
             title: 'Actions',
             align: 'right',
             render: (_, record) => (
                 <Space>
+                    <Button
+                        type="text"
+                        icon={<EyeOutlined />}
+                        onClick={() => navigate(`/employees/${record.id || record.uid}`)}
+                    />
                     {isHighLevelAdmin && (
                         <Button type="text" icon={<EditOutlined />} onClick={() => openEditModal(record)} />
                     )}
@@ -212,6 +262,11 @@ function EmployeesPage() {
                                 {Object.keys(designations).map(role => (
                                     <Option key={role} value={role}>{role}</Option>
                                 ))}
+                            </Select>
+                            <Select value={selectedType} onChange={setSelectedType} style={{ width: 160 }}>
+                                <Option value="all">All Types</Option>
+                                <Option value="Company">Company</Option>
+                                <Option value="Outsourced">Outsourced</Option>
                             </Select>
                             {isHighLevelAdmin && (
                                 <Button 
@@ -252,10 +307,16 @@ function EmployeesPage() {
                 <Form form={form} layout="vertical">
                     <Form.Item name="name" label="Full Name" rules={[{ required: true }]}><Input /></Form.Item>
                     <Form.Item name="designation" label="Designation" rules={[{ required: true }]}><Input /></Form.Item>
+                    <Form.Item name="employee_type" label="Employee Type">
+                        <Select>
+                            <Option value="Company">Company</Option>
+                            <Option value="Outsourced">Outsourced</Option>
+                        </Select>
+                    </Form.Item>
                     
                     {isHighLevelAdmin && (
                         <Form.Item name="manager_id" label="Assign Reporting Manager">
-                            <Select placeholder="Select Manager">
+                            <Select placeholder="Select Manager" allowClear>
                                 {managers.map(m => (
                                     <Option key={m.id} value={m.id}>{m.full_name}</Option>
                                 ))}
@@ -267,6 +328,24 @@ function EmployeesPage() {
                         <Col span={12}><Form.Item name="basic_salary" label="Basic Rate"><Input type="number" /></Form.Item></Col>
                         <Col span={12}><Form.Item name="allowance" label="Fixed Allowance"><Input type="number" /></Form.Item></Col>
                     </Row>
+                    <Row gutter={16}>
+                        <Col span={12}><Form.Item name="default_hourly_rate" label="Hourly Rate"><Input type="number" /></Form.Item></Col>
+                        <Col span={12}><Form.Item name="standard_work_days" label="Work Days"><Input type="number" /></Form.Item></Col>
+                    </Row>
+                    <Row gutter={16}>
+                        <Col span={12}><Form.Item name="civil_id_number" label="Civil ID No."><Input /></Form.Item></Col>
+                        <Col span={12}><Form.Item name="passport_number" label="Passport No."><Input /></Form.Item></Col>
+                    </Row>
+                    <Row gutter={16}>
+                        <Col span={12}><Form.Item name="phone_kuwait" label="Phone (Kuwait)"><Input /></Form.Item></Col>
+                        <Col span={12}><Form.Item name="nationality" label="Nationality"><Input /></Form.Item></Col>
+                    </Row>
+                    <Form.Item name="status" label="Status">
+                        <Select>
+                            <Option value="Active">Active</Option>
+                            <Option value="Inactive">Inactive</Option>
+                        </Select>
+                    </Form.Item>
                 </Form>
             </Modal>
         </div>

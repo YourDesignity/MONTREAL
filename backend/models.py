@@ -39,18 +39,64 @@ class Admin(Document, MemoryNode):
         name = "admins"
 
 class Employee(Document, MemoryNode):
+    # ===== BASIC INFO =====
     name: str
     designation: str
-    basic_salary: float
-    allowance: float = 0.0
-    standard_work_days: int
-    default_hourly_rate: float = 0.0
     status: str = "Active"
-    passport_path: Optional[str] = None
-    visa_path: Optional[str] = None
-    manager_id: Optional[int] = None 
+
+    # ===== EMPLOYEE TYPE =====
+    employee_type: str = "Company"  # "Company" | "Outsourced"
+
+    # ===== PERSONAL DETAILS =====
+    date_of_birth: Optional[date] = None
+    nationality: Optional[str] = None
+    permanent_address: Optional[str] = None
+
+    # ===== CONTACT INFORMATION =====
+    phone_kuwait: Optional[str] = None
+    phone_home_country: Optional[str] = None
+    emergency_contact_name: Optional[str] = None
+    emergency_contact_number: Optional[str] = None
+
+    # ===== IDENTITY DOCUMENTS =====
+    civil_id_number: Optional[str] = None
+    civil_id_expiry: Optional[date] = None
+    civil_id_document_path: Optional[str] = None  # PDF file path
+
+    passport_number: Optional[str] = None
+    passport_expiry: Optional[date] = None
+    passport_document_path: Optional[str] = None  # PDF file path
+
+    visa_document_path: Optional[str] = None  # PDF file path
+
+    # ===== EMPLOYEE PHOTO =====
+    photo_path: Optional[str] = None  # Image file path
+
+    # ===== FINANCIAL INFO =====
+    basic_salary: float = 0.0
+    allowance: float = 0.0
+    standard_work_days: int = 28
+    default_hourly_rate: float = 0.0  # Used for Outsourced employees
+
+    # ===== EMPLOYMENT DETAILS =====
+    date_of_joining: Optional[date] = None
+    contract_end_date: Optional[date] = None  # For Outsourced employees
+
+    # ===== DEPRECATED FIELDS (kept for backward compatibility) =====
+    passport_path: Optional[str] = None   # DEPRECATED - use passport_document_path
+    visa_path: Optional[str] = None       # DEPRECATED - use visa_document_path
+
+    manager_id: Optional[int] = None
+
     class Settings:
         name = "employees"
+        indexes = [
+            "name",
+            "employee_type",
+            "status",
+            "civil_id_number",
+            "passport_number",
+        ]
 
 class Site(Document, MemoryNode):
     name: Annotated[str, Indexed(unique=True)]
