@@ -94,6 +94,29 @@ class Employee(Document, MemoryNode):
 
     manager_id: Optional[int] = None
 
+    # ===== ASSIGNMENT TRACKING (NEW) =====
+    is_currently_assigned: bool = False
+    current_assignment_type: Optional[str] = None  # "Permanent" | "Temporary" | None
+    current_project_id: Optional[int] = None
+    current_project_name: Optional[str] = None
+    current_site_id: Optional[int] = None
+    current_site_name: Optional[str] = None
+    current_manager_id: Optional[int] = None
+    current_manager_name: Optional[str] = None
+    current_assignment_start: Optional[date] = None
+    current_assignment_end: Optional[date] = None
+
+    # Assignment History (list of assignment UIDs)
+    assignment_history_ids: List[int] = []
+
+    # Availability Status
+    availability_status: str = "Available"  # Available | Assigned | On Leave | Sick
+
+    # For Outsourced Employees Only
+    agency_name: Optional[str] = None      # If from external agency
+    agency_contact: Optional[str] = None
+    is_preferred_vendor: bool = False      # If this external worker is reliable/preferred
+
     class Settings:
         name = "employees"
         indexes = [
@@ -102,6 +125,8 @@ class Employee(Document, MemoryNode):
             "status",
             "civil_id_number",
             "passport_number",
+            "is_currently_assigned",
+            "availability_status",
         ]
 
 class Site(Document, MemoryNode):
@@ -110,8 +135,37 @@ class Site(Document, MemoryNode):
     manager_uid: Optional[int] = None
     description: Optional[str] = None
     phone: Optional[str] = None
+
+    # ===== PROJECT WORKFLOW FIELDS (NEW) =====
+    site_code: Optional[str] = None           # e.g., "SITE-001"
+    project_id: Optional[int] = None          # 🔗 Linked to Project.uid
+    project_name: Optional[str] = None        # Denormalized for quick access
+    contract_id: Optional[int] = None         # 🔗 Linked to Contract.uid
+    contract_code: Optional[str] = None       # Denormalized
+    assigned_manager_id: Optional[int] = None # 🔗 Linked to Admin.uid (Site Manager)
+    assigned_manager_name: Optional[str] = None  # Denormalized
+    required_workers: int = 0                 # How many workers needed
+    assigned_workers: int = 0                 # How many currently assigned
+    assigned_employee_ids: List[int] = []     # List of Employee.uid assigned to this site
+    status: str = "Active"                    # Active | Completed | On Hold
+    start_date: Optional[date] = None         # When site work started
+    completion_date: Optional[date] = None    # When site work completed
+
     class Settings:
         name = "sites"
+        indexes = [
+            "uid",
+            "site_code",
+            "project_id",
+            "contract_id",
+            "assigned_manager_id",
+            "status",
+        ]
+
+    async def update_workforce_count(self):
+        """Update assigned workers count based on assigned_employee_ids list."""
+        self.assigned_workers = len(self.assigned_employee_ids)
+        await self.save()
 
 class Designation(Document, MemoryNode):
     title: Annotated[str, Indexed(unique=True)]
@@ -128,7 +182,26 @@ class Attendance(Document, MemoryNode):
     date: str       
     status: str
     shift: Optional[str] = "Morning"
-    overtime_hours: Optional[int] = 0 
+    overtime_hours: Optional[int] = 0
+
+    # ===== REPLACEMENT TRACKING (NEW) =====
+    is_replacement: bool = False                        # True if external worker covering for someone
+    replacing_employee_id: Optional[int] = None        # ID of employee being replaced
+    replacing_employee_name: Optional[str] = None
+
+    replaced_by_employee_id: Optional[int] = None      # If THIS employee was replaced (sick leave)
+    replaced_by_employee_name: Optional[str] = None
+
+    replacement_reason: Optional[str] = None           # "Sick Leave" | "Vacation" | "Emergency"
+
+    # For external workers
+    daily_rate_applied: Optional[float] = None         # Rate for this specific day
+    hourly_rate_applied: Optional[float] = None
+    payment_status: str = "Pending"                    # Pending | Paid
+
+    # Temporary assignment link
+    temporary_assignment_id: Optional[int] = None      # Link to TemporaryAssignment if applicable
+
     class Settings:
         name = "attendance"
         indexes = [[("employee_uid", 1), ("date", 1)]]
@@ -271,7 +344,7 @@ class ContractWorkforce(BaseModel):
     role: str
     days: int = 0
 
-class Contract(Document, MemoryNode):
+class ContractSpec(Document, MemoryNode):
     title: str
     client: str
     contract_type: str = "Labour" 
@@ -284,7 +357,7 @@ class Contract(Document, MemoryNode):
     items: List[ContractItem] = []           
     expenses: List[ProjectExpense] = [] 
     class Settings:
-        name = "contracts"
+        name = "contract_specs"
 
 class InvoiceItem(BaseModel):
     description: str
@@ -320,7 +393,255 @@ class InventoryItem(Document, MemoryNode):
         name = "inventory_items"
 
 # =============================================================================
-# 7. MESSAGING SYSTEM
+# 7. PROJECT WORKFLOW SYSTEM (NEW)
+# =============================================================================
+
+class Project(Document):
+    """
+    Main project entity - represents a client project/contract work.
+    """
+    uid: int
+
+    # Basic Information
+    project_code: str              # e.g., "PRJ-001"
+    project_name: str              # e.g., "Al-Mansour Mall Construction"
+    client_name: str
+    client_contact: Optional[str] = None
+    client_email: Optional[str] = None
+    description: Optional[str] = None
+
+    # Status
+    status: str = "Active"         # Active | Completed | On Hold | Cancelled
+
+    # Relationships (UIDs for linking)
+    contract_ids: List[int] = []   # Can have multiple contracts
+    site_ids: List[int] = []
+
+    # Metrics (auto-calculated)
+    total_sites: int = 0
+    total_assigned_employees: int = 0
+    total_assigned_managers: int = 0
+
+    # Timestamps
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
+    created_by_admin_id: Optional[int] = None
+
+    class Settings:
+        name = "projects"
+        indexes = [
+            "uid",
+            "project_code",
+            "status",
+            "client_name",
+        ]
+
+    async def update_metrics(self):
+        """Update project metrics (sites count, employees count, etc.)."""
+        sites = await Site.find(Site.project_id == self.uid).to_list()
+        self.total_sites = len(sites)
+        self.site_ids = [s.uid for s in sites if s.uid is not None]
+
+        assignments = await EmployeeAssignment.find(
+            EmployeeAssignment.project_id == self.uid,
+            EmployeeAssignment.status == "Active"
+        ).to_list()
+        self.total_assigned_employees = len(assignments)
+
+        manager_ids = {s.assigned_manager_id for s in sites if s.assigned_manager_id}
+        self.total_assigned_managers = len(manager_ids)
+
+        self.updated_at = datetime.now()
+        await self.save()
+
+
+class Contract(Document):
+    """
+    Contract entity - linked to a project, defines work period and terms.
+    """
+    uid: int
+
+    # Basic Information
+    contract_code: str             # e.g., "CNT-001"
+    contract_name: Optional[str] = None
+
+    # Project Linking
+    project_id: int                # 🔗 Linked to Project.uid
+    project_name: Optional[str] = None  # Denormalized for quick access
+
+    # Contract Period
+    start_date: date
+    end_date: date
+
+    # Financial
+    contract_value: float = 0.0    # Total contract value in KD
+    payment_terms: Optional[str] = None  # e.g., "Monthly", "Milestone-based"
+
+    # Terms & Conditions
+    contract_terms: Optional[str] = None
+    notes: Optional[str] = None
+
+    # Status
+    status: str = "Active"         # Active | Expired | Terminated | Completed
+
+    # Relationships
+    site_ids: List[int] = []
+
+    # Auto-calculated fields
+    duration_days: int = 0         # Calculated from start_date and end_date
+    days_remaining: int = 0        # Days until expiry
+    is_expiring_soon: bool = False  # True if < 30 days remaining
+
+    # Timestamps
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
+    created_by_admin_id: Optional[int] = None
+
+    class Settings:
+        name = "contracts"
+        indexes = [
+            "uid",
+            "contract_code",
+            "project_id",
+            "status",
+            "end_date",
+        ]
+
+    async def calculate_duration(self):
+        """Calculate contract duration and days remaining."""
+        if self.start_date and self.end_date:
+            self.duration_days = (self.end_date - self.start_date).days
+
+            today = date.today()
+            if today < self.end_date:
+                self.days_remaining = (self.end_date - today).days
+                self.is_expiring_soon = self.days_remaining <= 30
+            else:
+                self.days_remaining = 0
+                self.is_expiring_soon = False
+                if self.status == "Active":
+                    self.status = "Expired"
+
+        self.updated_at = datetime.now()
+        await self.save()
+
+
+class EmployeeAssignment(Document):
+    """
+    Tracks employee assignments to projects/sites.
+    Used for company employees assigned for full contract duration.
+    """
+    uid: int
+
+    # Employee Information
+    employee_id: int               # 🔗 Linked to Employee.uid
+    employee_name: str
+    employee_type: str             # "Company" | "Outsourced"
+    employee_designation: Optional[str] = None
+
+    # Assignment Details
+    assignment_type: str = "Permanent"  # Permanent | Temporary
+
+    # Project/Site Linking
+    project_id: int
+    project_name: str
+    contract_id: int
+    site_id: int
+    site_name: str
+    manager_id: int
+    manager_name: str
+
+    # Assignment Period
+    assigned_date: date            # When assignment was created
+    assignment_start: date         # When employee starts working (usually contract start)
+    assignment_end: date           # When assignment ends (usually contract end)
+
+    # Status
+    status: str = "Active"         # Active | Completed | Reassigned | Terminated
+
+    # Notes
+    notes: Optional[str] = None
+    termination_reason: Optional[str] = None
+
+    # Timestamps
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
+    created_by_admin_id: Optional[int] = None
+
+    class Settings:
+        name = "employee_assignments"
+        indexes = [
+            "uid",
+            "employee_id",
+            "project_id",
+            "site_id",
+            "manager_id",
+            "status",
+            "assignment_start",
+            "assignment_end",
+        ]
+
+
+class TemporaryAssignment(Document):
+    """
+    Tracks temporary worker assignments (external/outsourced workers).
+    Used when company employees are on sick leave or additional workers are needed.
+    """
+    uid: int
+
+    # Worker Information
+    employee_id: int               # 🔗 Linked to Employee.uid (external worker)
+    employee_name: str
+    employee_type: str = "Outsourced"
+    employee_designation: Optional[str] = None
+
+    # Assignment Details
+    assignment_type: str = "Temporary"
+
+    # Site Linking
+    site_id: int
+    site_name: str
+    project_id: int
+    manager_id: int
+
+    # Replacement Details
+    replacing_employee_id: Optional[int] = None    # If covering for someone
+    replacing_employee_name: Optional[str] = None
+    replacement_reason: Optional[str] = None       # "Sick Leave" | "Vacation" | "Emergency" | "Additional Coverage"
+
+    # Period (can be just 1 day!)
+    start_date: date
+    end_date: date
+    total_days: int = 1
+
+    # Payment
+    rate_type: str = "Daily"       # Daily | Hourly
+    daily_rate: float = 0.0
+    hourly_rate: float = 0.0
+
+    # Status
+    status: str = "Active"         # Active | Completed | Cancelled
+
+    # Timestamps
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
+    created_by_admin_id: Optional[int] = None
+
+    class Settings:
+        name = "temporary_assignments"
+        indexes = [
+            "uid",
+            "employee_id",
+            "site_id",
+            "replacing_employee_id",
+            "start_date",
+            "end_date",
+            "status",
+        ]
+
+
+# =============================================================================
+# 8. MESSAGING SYSTEM
 # =============================================================================
 
 class Conversation(Document, MemoryNode):
@@ -559,6 +880,22 @@ class CompanySettings(Document):
     updated_at: datetime = Field(default_factory=datetime.now)
     updated_by_admin_id: Optional[int] = None
     updated_by_admin_name: Optional[str] = None
+
+    # ===== PROJECT WORKFLOW SETTINGS (NEW) =====
+    auto_generate_project_codes: bool = True   # Auto-generate PRJ-001, PRJ-002, etc.
+    auto_generate_contract_codes: bool = True  # Auto-generate CNT-001, CNT-002, etc.
+    auto_generate_site_codes: bool = True      # Auto-generate SITE-001, SITE-002, etc.
+
+    project_code_prefix: str = "PRJ"
+    contract_code_prefix: str = "CNT"
+    site_code_prefix: str = "SITE"
+
+    # Contract expiry alerts
+    contract_expiry_warning_days: int = 30     # Alert when contract expires in X days
+
+    # External worker settings
+    default_external_worker_daily_rate: float = 15.0    # Default daily rate in KD
+    default_external_worker_hourly_rate: float = 1.875  # Default hourly rate in KD
 
     class Settings:
         name = "company_settings"

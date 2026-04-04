@@ -10,9 +10,11 @@ from dotenv import load_dotenv
 from backend.models import (
     Counter, Admin, Employee, Site, Attendance, Schedule, Designation, 
     Overtime, Deduction, DutyAssignment, Vehicle, TripLog, 
-    MaintenanceLog, FuelLog, VehicleExpense, Contract, InventoryItem,
+    MaintenanceLog, FuelLog, VehicleExpense, ContractSpec, InventoryItem,
     Invoice, Conversation, Message, ManagerProfile,
-    ManagerAttendanceConfig, ManagerAttendance, CompanySettings
+    ManagerAttendanceConfig, ManagerAttendance, CompanySettings,
+    # NEW: Project Workflow System (Phase 1)
+    Project, Contract, EmployeeAssignment, TemporaryAssignment,
 )
 
 # Load Environment Variables
@@ -43,9 +45,11 @@ async def init_db():
             document_models=[
                 Counter, Admin, Employee, Site, Attendance, Schedule, Designation, 
                 Overtime, Deduction, DutyAssignment, Vehicle, TripLog, 
-                MaintenanceLog, FuelLog, VehicleExpense, Contract, InventoryItem,
+                MaintenanceLog, FuelLog, VehicleExpense, ContractSpec, InventoryItem,
                 Invoice, Conversation, Message, ManagerProfile,
-                ManagerAttendanceConfig, ManagerAttendance, CompanySettings
+                ManagerAttendanceConfig, ManagerAttendance, CompanySettings,
+                # NEW: Project Workflow System (Phase 1)
+                Project, Contract, EmployeeAssignment, TemporaryAssignment,
             ]
         )
         print(f"✅ Connected to MongoDB at {DB_NAME}")
