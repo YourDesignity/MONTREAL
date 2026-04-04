@@ -177,7 +177,7 @@ function EmployeesPage() {
                     message.success("Employee details and photo updated");
                 } catch (e) {
                     console.warn('Photo upload failed:', e);
-                    message.success("Employee details updated (photo upload failed)");
+                    message.warning("Employee details updated, but photo upload failed");
                 }
             } else {
                 message.success("Employee details updated");
@@ -187,7 +187,8 @@ function EmployeesPage() {
             setEditPhotoPreview(null);
             loadData();
         } catch (err) {
-            message.error("Update failed: " + (err.message || "Unknown error"));
+            console.error("Update failed:", err);
+            message.error("Failed to update employee details. Please try again.");
         }
     };
 
