@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from typing import List
-from backend.models import Contract, ProjectExpense
+from backend.models import ContractSpec as Contract, ProjectExpense
 from backend.database import get_next_uid
 from datetime import datetime
 
