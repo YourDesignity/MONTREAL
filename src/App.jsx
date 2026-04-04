@@ -43,6 +43,11 @@ import SiteManagementPage from './pages/ProjectWorkflow/SiteManagementPage';
 import EmployeeAssignment from './pages/ProjectWorkflow/EmployeeAssignment';
 import TempWorkerManagement from './pages/ProjectWorkflow/TempWorkerManagement';
 
+// --- PHASE 6: ANALYTICS & DASHBOARD PAGES ---
+import Dashboard from './pages/Dashboard';
+import WorkforceDashboard from './pages/WorkforceDashboard';
+import ProjectAnalytics from './pages/ProjectAnalytics';
+
 // --- Styles ---
 import "antd/dist/reset.css"; 
 import "./assets/styles/main.css";
@@ -77,6 +82,11 @@ const App = () => {
           {/* Protected Routes (Wrapped in Main Layout) */}
           <Route element={<Main />}>
             <Route path="dashboard" element={<DashboardPage />} />
+            
+            {/* Phase 6: New Dashboard & Analytics */}
+            <Route path="overview" element={<Dashboard />} />
+            <Route path="workforce-allocation" element={<WorkforceDashboard />} />
+            <Route path="analytics" element={<ProjectAnalytics />} />
             
             {/* HR & Workforce */}
             <Route path="employees" element={<EmployeesPage />} />
