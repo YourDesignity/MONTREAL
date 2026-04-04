@@ -385,7 +385,7 @@ async def get_all_managers_attendance(
                 "key": "afternoon"
             },
             "evening": {
-                "time": attendance.evening_check_in.strftime('%H:%M') if attendance and attendance.evening_check_in else None,
+                "time": attendance.evening_check_out.strftime('%H:%M') if attendance and attendance.evening_check_out else None,
                 "status": attendance.evening_status if attendance else None,
                 "key": "evening"
             },
