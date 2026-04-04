@@ -93,12 +93,25 @@ app.add_middleware(
         "Accept",
         "Origin",
         "X-Requested-With",
+        "Access-Control-Allow-Origin",
+        "Access-Control-Allow-Methods",
+        "Access-Control-Allow-Headers",
     ],
     expose_headers=["*"],
     max_age=600,  # Cache preflight for 10 minutes
 )
 
 logger.info("CORS Configured for Frontend Development.")
+
+
+# --- CORS DEBUGGING MIDDLEWARE ---
+@app.middleware("http")
+async def cors_debug_middleware(request, call_next):
+    origin = request.headers.get("origin")
+    logger.debug(f"CORS: {request.method} {request.url.path} from {origin}")
+    response = await call_next(request)
+    logger.debug(f"CORS Response: {response.status_code} for {request.url.path}")
+    return response
 
 # --- STATIC FILES ---
 static_dir = os.path.join(os.path.dirname(__file__), "..", "static")

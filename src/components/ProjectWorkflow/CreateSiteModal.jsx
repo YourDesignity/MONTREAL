@@ -16,7 +16,8 @@ const CreateSiteModal = ({ visible, projectId, contracts, onCancel, onSuccess })
 
   const handleSubmit = async () => {
     try {
-      const values = await form.validateFields();
+      await form.validateFields(['site_name', 'location', 'contract_id']);
+      const values = form.getFieldsValue(true);
       setLoading(true);
 
       const payload = {

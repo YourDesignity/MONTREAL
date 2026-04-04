@@ -59,6 +59,14 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
         if (response.status === 204) return null;
         return await response.json();
     } catch (error) {
+        if (error instanceof TypeError && error.message === 'Failed to fetch') {
+            console.error('CORS ERROR or Network Failure:', {
+                endpoint,
+                origin: window.location.origin,
+                backend: API_BASE_URL,
+                suggestion: 'Check backend is running on http://127.0.0.1:8000 and CORS is configured',
+            });
+        }
         console.error(`[API Network Error] ${endpoint}:`, error);
         throw error;
     }

@@ -16,7 +16,8 @@ const CreateContractModal = ({ visible, projectId, onCancel, onSuccess }) => {
 
   const handleSubmit = async () => {
     try {
-      const values = await form.validateFields();
+      await form.validateFields(['start_date', 'end_date', 'contract_value']);
+      const values = form.getFieldsValue(true);
       setLoading(true);
 
       const payload = {
