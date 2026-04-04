@@ -370,34 +370,25 @@ async def get_all_managers_attendance(
             ManagerAttendance.date == target_date
         )
 
-        config = await ManagerAttendanceConfig.find_one(
-            ManagerAttendanceConfig.manager_id == manager.uid
-        )
-
         result.append({
             "manager_id": manager.uid,
             "manager_name": manager.full_name,
-            "manager_email": manager.email,
-            "attendance": {
-                "date": target_date.isoformat(),
-                "day_status": attendance.day_status if attendance else "Pending",
-                "morning": {
-                    "enabled": config.morning_enabled if config else True,
-                    "check_in": attendance.morning_check_in.isoformat() if attendance and attendance.morning_check_in else None,
-                    "status": attendance.morning_status if attendance else None
-                },
-                "afternoon": {
-                    "enabled": config.afternoon_enabled if config else True,
-                    "check_in": attendance.afternoon_check_in.isoformat() if attendance and attendance.afternoon_check_in else None,
-                    "status": attendance.afternoon_status if attendance else None
-                },
-                "evening": {
-                    "enabled": config.evening_enabled if config else True,
-                    "check_in": attendance.evening_check_out.isoformat() if attendance and attendance.evening_check_out else None,
-                    "status": attendance.evening_status if attendance else None
-                },
-                "is_overridden": attendance.is_overridden if attendance else False
-            }
+            "day_status": attendance.day_status if attendance else "Pending",
+            "morning": {
+                "time": attendance.morning_check_in.strftime('%H:%M') if attendance and attendance.morning_check_in else None,
+                "status": attendance.morning_status if attendance else None,
+                "key": "morning"
+            },
+            "afternoon": {
+                "time": attendance.afternoon_check_in.strftime('%H:%M') if attendance and attendance.afternoon_check_in else None,
+                "status": attendance.afternoon_status if attendance else None,
+                "key": "afternoon"
+            },
+            "evening": {
+                "time": attendance.evening_check_in.strftime('%H:%M') if attendance and attendance.evening_check_in else None,
+                "status": attendance.evening_status if attendance else None,
+                "key": "evening"
+            },
         })
 
     return result
