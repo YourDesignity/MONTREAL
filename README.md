@@ -1,94 +1,89 @@
-# 🚀 Montreal Int. Business Dashboard
-The Next-Generation Enterprise Intelligence Hub.
-A lightweight, high-performance desktop ecosystem bridging the gap between Web UI and Native Performance.
 <div align="center">
-![alt text](https://img.shields.io/badge/Status-Active_Development-brightgreen?style=flat-square)
 
-![alt text](https://img.shields.io/badge/Version-1.0.0-blue?style=flat-square)
+  <h1>🚀 Montreal Int. Business Dashboard</h1>
+  
+  <p>
+    <strong>A High-Performance Enterprise Desktop Application</strong>
+  </p>
 
-![alt text](https://img.shields.io/badge/License-MIT-orange?style=flat-square)
-Explore Documentation | Report a Bug | Request a Feature
+  <p>
+    <a href="#-tech-stack">
+      <img src="https://img.shields.io/badge/Frontend-React-61DAFB?style=for-the-badge&logo=react&logoColor=black" />
+    </a>
+    <a href="#-tech-stack">
+      <img src="https://img.shields.io/badge/Desktop-Tauri-24C8D8?style=for-the-badge&logo=tauri&logoColor=white" />
+    </a>
+    <a href="#-tech-stack">
+      <img src="https://img.shields.io/badge/Backend-Python-3776AB?style=for-the-badge&logo=python&logoColor=white" />
+    </a>
+    <a href="#-tech-stack">
+      <img src="https://img.shields.io/badge/Database-MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white" />
+    </a>
+  </p>
+
+  <p>
+    <em>Built by <strong>Designity</strong> | Lead Architect: <strong>Nithin</strong></em>
+  </p>
+
 </div>
-💎 Project Philosophy
-Most business dashboards suffer from "Electron Bloat"—high RAM usage and sluggish performance. Montreal Int. breaks this trend. By utilizing Tauri, we offload system-level tasks to Rust, UI rendering to React, and data-heavy processing to Python, creating a triple-threat architecture that is:
-Fast: Sub-second startup times.
-Lean: Uses a fraction of the memory of a traditional browser-based app.
-Powerful: Full access to Python's data science and automation libraries.
-🏗️ Technical Ecosystem
-Layer	Technology	Function
-Frontend	
-![alt text](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
-Dynamic UI & Real-time State Management
-Desktop Core	
-![alt text](https://img.shields.io/badge/Tauri-24C8D8?style=for-the-badge&logo=tauri&logoColor=white)
-Rust-based Security & Native OS Bridge
-Engine	
-![alt text](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
-Complex Logic, Algorithms & Data Processing
-Database	
-![alt text](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
-Scalable NoSQL Document Storage
-🌟 Key Features
-Native Multi-Windowing: Professional desktop experience with native menus and shortcuts.
-Python Subprocess Integration: Execute complex data analysis scripts directly from the dashboard.
-Real-time Analytics: MongoDB Change Streams for live business data updates.
-Enterprise Security: Hardened Rust core ensures secure local data handling and encrypted IPC.
-Cross-Platform: Optimized for Windows, macOS, and Linux.
-🛠️ Installation & Setup
-1. System Requirements
-Node.js (v18.x or higher)
-Python (v3.10+)
-Rust Toolchain (via rustup.rs)
-MongoDB (Local or Atlas Instance)
-2. Repository Setup
-code
-Bash
-# Clone the architecture
+
+<br />
+
+---
+
+## 📖 Project Overview
+
+**Montreal Int. Business Dashboard** is a next-generation desktop application designed to streamline international business operations. Unlike traditional web apps, this solution leverages **Tauri** to provide a native, lightweight, and secure desktop experience while maintaining the flexibility of web technologies.
+
+This dashboard serves as the central command center for data visualization, resource management, and real-time analytics for Montreal's operations.
+
+### 🌟 Key Features
+*   **Hybrid Architecture:** Combines the UI speed of **React** with the raw processing power of **Python**.
+*   **Native Performance:** Powered by **Tauri (Rust)**, ensuring the app uses minimal RAM compared to Electron-based apps.
+*   **Real-Time Data:** Seamless integration with **MongoDB** for live business intelligence updates.
+*   **Secure Backend:** A dedicated Python subprocess handles sensitive logic and database transactions locally.
+
+---
+
+## 🏗 Tech Stack & Architecture
+
+We utilize a **Service-Oriented Architecture (SOA)** wrapped in a desktop shell.
+
+| Component | Technology | Role |
+| :--- | :--- | :--- |
+| **User Interface** | ![React](https://img.shields.io/badge/-React-black?logo=react&logoColor=61DAFB) | Dynamic, reactive frontend for data visualization. |
+| **Desktop Core** | ![Tauri](https://img.shields.io/badge/-Tauri-black?logo=tauri&logoColor=24C8D8) | Handles windowing, native OS menus, and Rust-based security. |
+| **Backend Logic** | ![Python](https://img.shields.io/badge/-Python-black?logo=python&logoColor=3776AB) | Processes complex algorithms and handles heavy data lifting. |
+| **Database** | ![MongoDB](https://img.shields.io/badge/-MongoDB-black?logo=mongodb&logoColor=47A248) | NoSQL database for flexible and scalable data storage. |
+
+---
+
+## ⚡ Getting Started (Local Development)
+
+Follow these instructions to set up the development environment.
+
+### 1. Prerequisites
+Ensure you have the following installed:
+*   [Node.js](https://nodejs.org/) (Latest LTS)
+*   [Python 3.10+](https://www.python.org/)
+*   [Rust](https://www.rust-lang.org/tools/install) (Required for Tauri)
+*   [MongoDB Community Server](https://www.mongodb.com/try/download/community)
+
+### 2. Installation
+
+```bash
+# Clone the repository
 git clone https://github.com/nithinktofficial/MONTREAL.git
 cd MONTREAL
 
-# Install UI & Desktop dependencies
+# Install Frontend Dependencies
 npm install
 
-# Initialize Python Virtual Environment
+# Setup Python Backend (Create Virtual Environment)
 python -m venv .venv
-# Activate (Windows)
-.venv\Scripts\activate
-# Activate (Mac/Linux)
-source .venv/bin/activate
+# Activate: 
+# Windows: .venv\Scripts\activate
+# Mac/Linux: source .venv/bin/activate
 
-# Install Engine requirements
+# Install Python Requirements
 pip install -r requirements.txt
-3. Development Mode
-code
-Bash
-npm run tauri dev
-🧭 Architecture Flow
-code
-Mermaid
-graph TD
-    A[React UI] <-->|IPC Commands| B[Tauri Rust Core]
-    B <-->|Subprocess| C[Python Engine]
-    C <-->|Query| D[(MongoDB)]
-    B <-->|OS Access| E[Native System]
-👑 Leadership & Credits
-This project is a flagship product developed under Designity.
-Lead Architects
-Name	Role	Profile
-Nithin	Chief Systems Architect	@nithinktofficial
-Hariprasad	Principal Software Engineer	@hariprasad-dev
-📈 Roadmap
-
-Initial Hybrid Core Setup
-
-MongoDB Integration Layer
-
-Advanced Data Visualization Suite
-
-Machine Learning Forecasting Module
-
-One-Click Installer Packaging
-<div align="center">
-Built with Precision by Designity
-© 2024 Montreal International Operations. All Rights Reserved.
-</div>
