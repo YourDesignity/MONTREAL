@@ -10,6 +10,7 @@ import {
   TeamOutlined,
   ClockCircleOutlined,
   SettingOutlined,
+  ApartmentOutlined,
 } from "@ant-design/icons";
 import { useAuth } from "../../context/AuthContext";
 
@@ -31,6 +32,7 @@ function Sidenav({ color }) {
       { path: "/payslips", name: "Payslips", icon: <DollarOutlined />, perm: 'payslip:generate' },
       { path: "/inventory", name: "Inventory", icon: <DatabaseOutlined />, perm: 'employee:view_all' },
       { path: "/projects", name: "Projects", icon: <ProjectOutlined />, perm: 'employee:view_all' },
+      { path: "/project-workflow", name: "Project Workflow", icon: <ApartmentOutlined />, perm: 'admin:view_all' },
       
       // --- RESTRICTED FINANCE ITEM (ADMIN ONLY) ---
       { 

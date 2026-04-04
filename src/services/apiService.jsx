@@ -240,6 +240,38 @@ export const deleteInventoryItem = (id) => fetchWithAuth(`/inventory/${id}`, { m
 export const getCompanySettings = () => fetchWithAuth('/settings/');
 export const updateCompanySettings = (data) => fetchWithAuth('/settings/', { method: 'PUT', body: JSON.stringify(data) });
 
+// --- 12. PROJECT WORKFLOW ---
+export const getWorkflowProjects = (status) =>
+  fetchWithAuth(status ? `/projects/?status=${status}` : '/projects/');
+export const getWorkflowProjectDetails = (id) => fetchWithAuth(`/projects/${id}`);
+export const createWorkflowProject = (data) =>
+  fetchWithAuth('/projects/', { method: 'POST', body: JSON.stringify(data) });
+export const updateWorkflowProject = (id, data) =>
+  fetchWithAuth(`/projects/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const deleteWorkflowProject = (id) =>
+  fetchWithAuth(`/projects/${id}`, { method: 'DELETE' });
+
+export const getWorkflowContracts = (projectId) =>
+  fetchWithAuth(projectId ? `/workflow/contracts/?project_id=${projectId}` : '/workflow/contracts/');
+export const createWorkflowContract = (data) =>
+  fetchWithAuth('/workflow/contracts/', { method: 'POST', body: JSON.stringify(data) });
+export const deleteWorkflowContract = (id) =>
+  fetchWithAuth(`/workflow/contracts/${id}`, { method: 'DELETE' });
+
+export const getWorkflowSites = (projectId) =>
+  fetchWithAuth(projectId ? `/workflow/sites/?project_id=${projectId}` : '/workflow/sites/');
+export const createWorkflowSite = (data) =>
+  fetchWithAuth('/workflow/sites/', { method: 'POST', body: JSON.stringify(data) });
+export const deleteWorkflowSite = (id) =>
+  fetchWithAuth(`/workflow/sites/${id}`, { method: 'DELETE' });
+export const assignManagerToSite = (siteId, managerId) =>
+  fetchWithAuth(`/workflow/sites/${siteId}/assign-manager`, {
+    method: 'POST',
+    body: JSON.stringify({ manager_id: managerId }),
+  });
+export const unassignManagerFromSite = (siteId) =>
+  fetchWithAuth(`/workflow/sites/${siteId}/unassign-manager`, { method: 'DELETE' });
+
 const apiService = { 
     fetchWithAuth, login, logout, getEmployees, getEmployeeById, addEmployee, updateEmployee, deleteEmployee,
     uploadEmployeePhoto, uploadEmployeeDocument, downloadEmployeeDocument, getEmployeePhoto,
