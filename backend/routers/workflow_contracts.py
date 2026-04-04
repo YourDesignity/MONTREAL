@@ -81,6 +81,7 @@ async def create_contract(
         created_by_admin_id=current_user.get("id")
     )
 
+    await new_contract.insert()
     await new_contract.calculate_duration()
 
     if new_contract.uid not in project.contract_ids:
