@@ -33,6 +33,7 @@ import VehicleManagementPage from './pages/VehicleManagement';
 
 // --- NEW FINANCIAL PAGES ---
 import FinancePage from './pages/FinancePage'; // <--- NEW: Profit & Loss Page
+import CompanySettingsPage from './pages/CompanySettingsPage';
 
 // --- Styles ---
 import "antd/dist/reset.css"; 
@@ -97,6 +98,7 @@ const App = () => {
             <Route path="my-attendance" element={<ManagerMyAttendancePage />} />
             <Route path="messages" element={<MessagePage />} />
             <Route path="manager-messages" element={<ManagerMessagesPage />} />
+            <Route path="settings" element={<CompanySettingsPage />} />
           </Route>
 
           {/* Redirects */}

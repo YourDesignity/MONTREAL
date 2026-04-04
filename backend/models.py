@@ -477,6 +477,35 @@ class ManagerAttendance(Document):
 
 
 
+# =============================================================================
+# 9. COMPANY SETTINGS
+# =============================================================================
+
+class CompanySettings(Document):
+    """
+    Company-wide configuration for salary calculations and business rules.
+    Only one settings document should exist (singleton pattern).
+    """
+    uid: int = 1  # Always 1 (singleton)
+
+    # Overtime Multipliers
+    normal_overtime_multiplier: float = 1.25      # Normal OT rate (default: 25% premium)
+    offday_overtime_multiplier: float = 1.5       # Off-day OT rate (default: 50% premium)
+
+    # Work Hours
+    standard_hours_per_day: int = 8               # Default work hours per day
+
+    # Absence Penalties
+    enable_absence_deduction: bool = True         # Whether to deduct for absences
+
+    # Metadata
+    updated_at: datetime = Field(default_factory=datetime.now)
+    updated_by_admin_id: Optional[int] = None
+    updated_by_admin_name: Optional[str] = None
+
+    class Settings:
+        name = "company_settings"
+
 
 # from typing import List, Optional, Dict, Any, Annotated # <--- Added Annotated
 # from datetime import datetime

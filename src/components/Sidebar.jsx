@@ -11,7 +11,8 @@ import {
   BiCar,
   BiSitemap,
   BiLineChart, // <--- 1. NEW ICON FOR FINANCE
-  BiReceipt     // <--- ICON FOR BILLING/INVOICES
+  BiReceipt,    // <--- ICON FOR BILLING/INVOICES
+  BiCog         // <--- ICON FOR SETTINGS
 } from "react-icons/bi";
 import { FaUserShield } from "react-icons/fa";
 import { NavLink } from "react-router-dom";
@@ -93,6 +94,12 @@ const allMenuItems = [
     name: "Site Mgmt",
     icon: <BiSitemap className="icon" />,
     requiredPerm: 'site:view', 
+  },
+  {
+    path: "/settings",
+    name: "Settings",
+    icon: <BiCog className="icon" />,
+    requiredPerm: 'admin:view_all',
   },
 ];
 
