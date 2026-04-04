@@ -97,6 +97,7 @@ async def bulk_assign_employees(
                 uid=new_uid,
                 employee_id=emp_id,
                 employee_name=employee.name,
+                employee_designation=employee.designation,
                 employee_type="Company",
                 assignment_type="Permanent",
                 project_id=site.project_id,

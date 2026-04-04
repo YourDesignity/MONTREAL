@@ -249,6 +249,26 @@ async def delete_site(
 
 # ===== MANAGER ASSIGNMENT =====
 
+@router.get("/managers")
+async def get_available_managers(
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Get list of site managers available for assignment."""
+    if current_user.get("role") not in ["SuperAdmin", "Admin"]:
+        raise HTTPException(status_code=403, detail="Only Admins can view managers")
+
+    managers = await Admin.find(Admin.role == "Site Manager", Admin.is_active == True).to_list()
+    return [
+        {
+            "uid": m.uid,
+            "full_name": m.full_name,
+            "email": m.email,
+            "role": m.role,
+        }
+        for m in managers
+    ]
+
+
 @router.post("/{site_id}/assign-manager")
 async def assign_manager_to_site(
     site_id: int,
