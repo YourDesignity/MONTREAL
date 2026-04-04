@@ -52,7 +52,7 @@ const AssignTempWorkersModal = ({ visible, site, onCancel, onSuccess, onRegister
 
     const handleWorkerSelect = (ids) => {
         setSelectedWorkerIds(ids);
-        // Initialise date range for newly selected workers
+        // Initialize date range for newly selected workers
         const updatedRanges = { ...workerDateRanges };
         ids.forEach(id => {
             if (!updatedRanges[id]) {

@@ -415,10 +415,10 @@ async def bulk_assign_temp_workers(
                 "estimated_cost": round(cost, 3),
             })
 
-            logger.info(f"Temp worker {worker_item.employee_id} assigned to site {assignment_data.site_id}")
+            logger.info(f"Temp worker assigned to site successfully")
 
         except Exception as e:
-            logger.error(f"Error assigning temp worker {worker_item.employee_id}: {str(e)}")
+            logger.error("Error assigning temp worker: assignment failed")
             failed_assignments.append({
                 "employee_id": worker_item.employee_id,
                 "reason": "An error occurred during assignment"
@@ -776,7 +776,7 @@ async def end_temp_assignment(
             site.assigned_employee_ids.remove(assignment.employee_id)
         await site.update_workforce_count()
 
-    logger.info(f"Temp assignment {assignment_id} ended for worker {assignment.employee_id}")
+    logger.info("Temp assignment ended successfully")
 
     return {
         "message": "Assignment ended successfully",

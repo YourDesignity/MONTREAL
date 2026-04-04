@@ -40,22 +40,7 @@ const TempWorkerManagement = () => {
     const [registerModalVisible, setRegisterModalVisible] = useState(false);
     const [activeTab, setActiveTab] = useState('company');
 
-    const fetchAll = useCallback(async () => {
-        await Promise.all([
-            fetchCompanyEmployees(),
-            fetchTempWorkers(),
-            fetchCostSummary(),
-        ]);
-    }, [siteId]); // eslint-disable-line react-hooks/exhaustive-deps
-
-    useEffect(() => {
-        if (siteId) {
-            fetchAll();
-        }
-    }, [siteId, fetchAll]);
-
-    // ── Company Employees ──────────────────────────────────────────────
-    const fetchCompanyEmployees = async () => {
+    const fetchCompanyEmployees = useCallback(async () => {
         setLoadingCompany(true);
         try {
             const data = await fetchWithAuth(`/assignments/site/${siteId}/employees`);
@@ -67,7 +52,45 @@ const TempWorkerManagement = () => {
         } finally {
             setLoadingCompany(false);
         }
-    };
+    }, [siteId]);
+
+    const fetchTempWorkers = useCallback(async () => {
+        setLoadingTemp(true);
+        try {
+            const data = await getTempWorkersAtSite(siteId);
+            setTempWorkers(data.assignments || []);
+        } catch (err) {
+            message.error('Failed to load temporary workers');
+        } finally {
+            setLoadingTemp(false);
+        }
+    }, [siteId]);
+
+    const fetchCostSummary = useCallback(async () => {
+        setLoadingSummary(true);
+        try {
+            const data = await getCostSummary({ site_id: parseInt(siteId, 10) });
+            setCostSummary(data);
+        } catch (err) {
+            console.error('Cost summary error:', err);
+        } finally {
+            setLoadingSummary(false);
+        }
+    }, [siteId]);
+
+    const fetchAll = useCallback(() => {
+        fetchCompanyEmployees();
+        fetchTempWorkers();
+        fetchCostSummary();
+    }, [fetchCompanyEmployees, fetchTempWorkers, fetchCostSummary]);
+
+    useEffect(() => {
+        if (siteId) {
+            fetchAll();
+        }
+    }, [siteId, fetchAll]);
+
+    // ── Company Employees ──────────────────────────────────────────────
 
     const handleUnassignCompany = (assignmentId, employeeName) => {
         Modal.confirm({
@@ -92,17 +115,6 @@ const TempWorkerManagement = () => {
         companyAssignments.find(a => a.employee_id === empId)?.uid;
 
     // ── Temp Workers ───────────────────────────────────────────────────
-    const fetchTempWorkers = async () => {
-        setLoadingTemp(true);
-        try {
-            const data = await getTempWorkersAtSite(siteId);
-            setTempWorkers(data.assignments || []);
-        } catch (err) {
-            message.error('Failed to load temporary workers');
-        } finally {
-            setLoadingTemp(false);
-        }
-    };
 
     const handleEndAssignment = (assignmentId, workerName) => {
         Modal.confirm({
@@ -123,20 +135,6 @@ const TempWorkerManagement = () => {
                 }
             },
         });
-    };
-
-    // ── Cost Summary ───────────────────────────────────────────────────
-    const fetchCostSummary = async () => {
-        setLoadingSummary(true);
-        try {
-            const data = await getCostSummary({ site_id: siteId });
-            setCostSummary(data);
-        } catch (err) {
-            // Non-critical – summary may not be available yet
-            console.error('Cost summary error:', err);
-        } finally {
-            setLoadingSummary(false);
-        }
     };
 
     // ── Company Employees Columns ──────────────────────────────────────
