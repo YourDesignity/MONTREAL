@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card, Form, InputNumber, Switch, Button, message, Row, Col, Typography, Alert, Divider } from 'antd';
 import { SaveOutlined, SettingOutlined, DollarOutlined, ClockCircleOutlined } from '@ant-design/icons';
-import axios from 'axios';
+import { getCompanySettings, updateCompanySettings } from '../services/apiService';
 
 const { Title, Text } = Typography;
 
@@ -11,18 +11,15 @@ function CompanySettingsPage() {
     const [saving, setSaving] = useState(false);
     const [settings, setSettings] = useState(null);
 
-    const getAuthHeaders = () => ({
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    });
 
     const fetchSettings = useCallback(async () => {
         setLoading(true);
         try {
-            const response = await axios.get('http://localhost:8000/settings/', getAuthHeaders());
-            setSettings(response.data);
-            form.setFieldsValue(response.data);
+            const response = await getCompanySettings();
+            setSettings(response);
+            form.setFieldsValue(response);
         } catch (err) {
-            message.error('Failed to load settings');
+            message.error('Failed to load settings: ' + (err.message || 'Unknown error'));
         } finally {
             setLoading(false);
         }
@@ -36,11 +33,11 @@ function CompanySettingsPage() {
         try {
             const values = await form.validateFields();
             setSaving(true);
-            await axios.put('http://localhost:8000/settings/', values, getAuthHeaders());
+            await updateCompanySettings(values);
             message.success('Company settings updated successfully');
             fetchSettings();
         } catch (err) {
-            message.error('Failed to save settings: ' + (err.response?.data?.detail || err.message));
+            message.error('Failed to save settings: ' + (err.message || 'Unknown error'));
         } finally {
             setSaving(false);
         }

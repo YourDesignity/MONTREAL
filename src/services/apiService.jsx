@@ -206,6 +206,10 @@ export const getInventory = () => fetchWithAuth('/inventory/');
 export const addInventoryItem = (data) => fetchWithAuth('/inventory/', { method: 'POST', body: JSON.stringify(data) });
 export const deleteInventoryItem = (id) => fetchWithAuth(`/inventory/${id}`, { method: 'DELETE' });
 
+// --- 11. COMPANY SETTINGS ---
+export const getCompanySettings = () => fetchWithAuth('/settings/');
+export const updateCompanySettings = (data) => fetchWithAuth('/settings/', { method: 'PUT', body: JSON.stringify(data) });
+
 const apiService = { 
     fetchWithAuth, login, logout, getEmployees, getEmployeeById, addEmployee, updateEmployee, deleteEmployee,
     getDesignations, addDesignation, deleteDesignation, getSites, addSite, deleteSite,
@@ -221,6 +225,7 @@ const apiService = {
     updateManagerCredentials, updateManagerSites,
     getManagerAttendanceConfig, updateManagerAttendanceConfig, getManagerAttendanceAll, overrideManagerAttendance,
     getMyAttendanceConfig, checkInSegment, getMyTodayAttendance, getMyAttendanceHistory,
+    getCompanySettings, updateCompanySettings,
 };
 
 export default apiService;
