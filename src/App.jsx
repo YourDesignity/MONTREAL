@@ -41,6 +41,7 @@ import ProjectDashboard from './pages/ProjectWorkflow/ProjectDashboard';
 import ContractManagementPage from './pages/ProjectWorkflow/ContractManagementPage';
 import SiteManagementPage from './pages/ProjectWorkflow/SiteManagementPage';
 import EmployeeAssignment from './pages/ProjectWorkflow/EmployeeAssignment';
+import TempWorkerManagement from './pages/ProjectWorkflow/TempWorkerManagement';
 
 // --- Styles ---
 import "antd/dist/reset.css"; 
@@ -99,6 +100,7 @@ const App = () => {
             <Route path="project-workflow/:projectId/contracts" element={<ContractManagementPage />} />
             <Route path="project-workflow/:projectId/sites" element={<SiteManagementPage />} />
             <Route path="sites/:siteId/assign-employees" element={<EmployeeAssignment />} />
+            <Route path="sites/:siteId/workforce" element={<TempWorkerManagement />} />
             
             {/* --- NEW FINANCIAL INTEL ROUTE --- */}
             <Route path="finance" element={<FinancePage />} /> {/* <--- ADDED THIS */}
