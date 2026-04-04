@@ -100,7 +100,7 @@ async def create_site(
 
     logger.info(f"Site created: {site_code} for project {project.project_code}")
 
-    return new_site
+    return new_site.model_dump(mode='json')
 
 
 @router.get("/", response_model=List[dict])
@@ -136,7 +136,7 @@ async def get_all_sites(
         raise HTTPException(status_code=403, detail="Access denied")
 
     logger.info(f"Retrieved {len(sites)} sites")
-    return sites
+    return [s.model_dump(mode='json') for s in sites]
 
 
 @router.get("/{site_id}")
@@ -170,9 +170,9 @@ async def get_site_details(
             employees.append(emp)
 
     return {
-        "site": site,
-        "assigned_employees": employees,
-        "assignments": assignments
+        "site": site.model_dump(mode='json'),
+        "assigned_employees": [e.model_dump(mode='json') for e in employees],
+        "assignments": [a.model_dump(mode='json') for a in assignments]
     }
 
 
@@ -201,7 +201,7 @@ async def update_site(
 
     logger.info(f"Site {site_id} updated")
 
-    return site
+    return site.model_dump(mode='json')
 
 
 @router.delete("/{site_id}", status_code=204)
