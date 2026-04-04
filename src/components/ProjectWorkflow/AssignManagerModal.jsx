@@ -110,7 +110,7 @@ const AssignManagerModal = ({ visible, site, onCancel, onSuccess }) => {
           }
         >
           {managers.map((m) => (
-            <Select.Option key={m.uid} value={m.uid}>
+            <Select.Option key={m.uid ?? m.id} value={m.uid ?? m.id}>
               {m.full_name || m.name} – {m.email || ''}
             </Select.Option>
           ))}

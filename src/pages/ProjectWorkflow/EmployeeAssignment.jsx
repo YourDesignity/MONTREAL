@@ -37,15 +37,10 @@ const EmployeeAssignment = () => {
   const fetchSiteData = async () => {
     setLoading(true);
     try {
-      const response = await fetchWithAuth(`/assignments/site/${siteId}/employees`);
-      if (response.ok) {
-        const data = await response.json();
-        setSite(data.site);
-        setAssignedEmployees(data.employees || []);
-        setAssignments(data.assignments || []);
-      } else {
-        message.error('Failed to fetch site data');
-      }
+      const data = await fetchWithAuth(`/assignments/site/${siteId}/employees`);
+      setSite(data.site);
+      setAssignedEmployees(data.employees || []);
+      setAssignments(data.assignments || []);
     } catch (error) {
       console.error('Error:', error);
       message.error('Error fetching site data');
@@ -56,11 +51,8 @@ const EmployeeAssignment = () => {
 
   const fetchAvailableEmployees = async () => {
     try {
-      const response = await fetchWithAuth('/assignments/available/employees');
-      if (response.ok) {
-        const data = await response.json();
-        setAvailableEmployees(data.employees || []);
-      }
+      const data = await fetchWithAuth('/assignments/available/employees');
+      setAvailableEmployees(data.employees || []);
     } catch (error) {
       console.error('Error fetching available employees:', error);
     }
@@ -79,9 +71,8 @@ const EmployeeAssignment = () => {
 
     setLoading(true);
     try {
-      const response = await fetchWithAuth('/assignments/assign-employees', {
+      const data = await fetchWithAuth('/assignments/assign-employees', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           site_id: parseInt(siteId),
           employee_ids: selectedEmployees,
@@ -90,21 +81,15 @@ const EmployeeAssignment = () => {
         })
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        message.success(data.message);
-        setAssignModalVisible(false);
-        setSelectedEmployees([]);
-        setDateRange([dayjs(), null]);
-        fetchSiteData();
-        fetchAvailableEmployees();
-      } else {
-        const errorData = await response.json();
-        message.error(errorData.detail || 'Failed to assign employees');
-      }
+      message.success(data.message);
+      setAssignModalVisible(false);
+      setSelectedEmployees([]);
+      setDateRange([dayjs(), null]);
+      fetchSiteData();
+      fetchAvailableEmployees();
     } catch (error) {
       console.error('Error:', error);
-      message.error('Error assigning employees');
+      message.error(error.message || 'Error assigning employees');
     } finally {
       setLoading(false);
     }
@@ -118,20 +103,16 @@ const EmployeeAssignment = () => {
       okType: 'danger',
       onOk: async () => {
         try {
-          const response = await fetchWithAuth(`/assignments/${assignmentId}`, {
+          await fetchWithAuth(`/assignments/${assignmentId}`, {
             method: 'DELETE'
           });
 
-          if (response.ok) {
-            message.success('Employee unassigned successfully');
-            fetchSiteData();
-            fetchAvailableEmployees();
-          } else {
-            message.error('Failed to unassign employee');
-          }
+          message.success('Employee unassigned successfully');
+          fetchSiteData();
+          fetchAvailableEmployees();
         } catch (error) {
           console.error('Error:', error);
-          message.error('Error unassigning employee');
+          message.error(error.message || 'Error unassigning employee');
         }
       }
     });
