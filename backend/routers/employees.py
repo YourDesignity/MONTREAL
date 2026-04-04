@@ -4,7 +4,7 @@ import shutil
 import logging
 import datetime
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Form, UploadFile, File, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Form, UploadFile, File, Query, Request
 from fastapi.responses import FileResponse
 
 # --- Imports ---
@@ -24,6 +24,13 @@ router = APIRouter(
     prefix="/employees",
     tags=["Employees"],
     dependencies=[Depends(get_current_active_user)]
+)
+
+# Separate router for the download endpoint (no router-level auth dependency,
+# auth is handled manually inside the endpoint to support token as query param)
+download_router = APIRouter(
+    prefix="/employees",
+    tags=["Employees"],
 )
 
 logger = setup_logger("EmployeesRouter", log_file="logs/employees_router.log", level=logging.DEBUG)
@@ -50,9 +57,97 @@ def save_upload_file(upload_file: UploadFile, destination: str) -> str:
         upload_file.file.close()
     return destination
 
-# =============================================================================
-# 1. GET EMPLOYEES (Manager-Aware Filtering)
-# =============================================================================
+# --- Helper: Dual Storage Save ---
+async def save_file_dual_storage(
+    file_content: bytes,
+    employee_id: int,
+    employee_name: str,
+    file_type: str,  # "photo" | "civil_id" | "passport" | "visa"
+    extension: str   # "jpg", "png", "pdf"
+) -> tuple:
+    """
+    Save file to BOTH storage locations:
+    1. Backend uploads folder (database-linked storage)
+    2. Custom storage path (user-configurable manual access folder)
+
+    Returns:
+        tuple: (db_storage_path, custom_storage_path)
+               custom_storage_path is None if disabled or failed
+    """
+    from backend.models import CompanySettings
+
+    # Get company settings for custom storage configuration
+    settings = await CompanySettings.find_one(CompanySettings.uid == 1)
+
+    # Generate filename based on settings
+    timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+
+    if settings and settings.use_employee_name_in_filename:
+        # Create clean employee name (only allow alphanumeric, underscores, hyphens - no path separators)
+        clean_name = "".join(c for c in employee_name if c.isalnum() or c in ('_', '-'))
+        # Limit length and ensure we have a safe filename component
+        clean_name = clean_name[:50] or "employee"
+        filename = f"{employee_id}_{clean_name}_{file_type}.{extension}"
+    else:
+        filename = f"emp_{employee_id}_{file_type}_{timestamp}.{extension}"
+
+    # Ensure filename contains no path separators (defense-in-depth)
+    filename = os.path.basename(filename)
+
+    # 1. SAVE TO DATABASE STORAGE (backend/uploads)
+    if file_type == "photo":
+        db_dir = PHOTO_DIR
+    else:
+        db_dir = DOCUMENT_DIR
+
+    db_path = os.path.join(db_dir, filename)
+    os.makedirs(db_dir, exist_ok=True)
+    with open(db_path, "wb") as f:
+        f.write(file_content)
+
+    logger.debug("File saved to database storage for employee_id=%s type=%s", employee_id, file_type)
+
+    # 2. SAVE TO CUSTOM LOCAL STORAGE (user-configurable folder)
+    custom_path = None
+
+    if settings and settings.enable_local_storage and settings.custom_storage_path:
+        try:
+            # Normalize the base path to prevent traversal via the stored setting
+            base_path = os.path.normpath(settings.custom_storage_path)
+
+            # Create organized folder structure (file_type already validated by callers)
+            if file_type == "photo":
+                custom_dir = os.path.join(base_path, "employees", "photos")
+            elif file_type == "civil_id":
+                custom_dir = os.path.join(base_path, "employees", "civil_ids")
+            elif file_type == "passport":
+                custom_dir = os.path.join(base_path, "employees", "passports")
+            elif file_type == "visa":
+                custom_dir = os.path.join(base_path, "employees", "visas")
+            else:
+                custom_dir = os.path.join(base_path, "employees", "documents")
+
+            # Ensure the resolved custom_dir is still inside base_path
+            custom_dir = os.path.normpath(custom_dir)
+            if not (custom_dir == base_path or custom_dir.startswith(base_path + os.sep)):
+                raise ValueError("Resolved custom directory is outside the configured base path")
+
+            custom_path = os.path.join(custom_dir, filename)
+
+            os.makedirs(custom_dir, exist_ok=True)
+            with open(custom_path, "wb") as f:
+                f.write(file_content)
+
+            logger.info("File saved to custom storage for employee_id=%s type=%s", employee_id, file_type)
+
+        except Exception as e:
+            logger.warning("Failed to save to custom storage for employee_id=%s: %s", employee_id, type(e).__name__)
+            # Don't fail the entire upload if custom storage fails
+            custom_path = None
+
+    return db_path, custom_path
+
+
 # =============================================================================
 # 1. GET EMPLOYEES (Manager-Aware Filtering)
 # =============================================================================
@@ -310,7 +405,7 @@ async def upload_employee_photo(
     file: UploadFile = File(...),
     current_user: dict = Depends(get_current_active_user)
 ):
-    """Upload employee photo (JPG/PNG)"""
+    """Upload employee photo with dual storage (database + custom folder)"""
     if current_user.get("role") not in ["SuperAdmin", "Admin"]:
         raise HTTPException(status_code=403, detail="Only Admins can upload employee photos.")
 
@@ -334,28 +429,44 @@ async def upload_employee_photo(
     if not emp:
         raise HTTPException(status_code=404, detail="Employee not found")
 
-    # Delete old photo if exists
+    # Delete old files if they exist
     if emp.photo_path and os.path.exists(emp.photo_path):
         try:
             os.remove(emp.photo_path)
         except OSError:
             pass
 
+    if emp.custom_photo_path and os.path.exists(emp.custom_photo_path):
+        try:
+            os.remove(emp.custom_photo_path)
+        except OSError:
+            pass
+
     # Derive extension from content-type (NOT from user-provided filename)
     ext = _CONTENT_TYPE_EXT.get(file.content_type.lower(), "jpg")
-    filename = f"emp_{employee_id}_photo_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.{ext}"
-    file_path = os.path.join(PHOTO_DIR, filename)
 
-    os.makedirs(PHOTO_DIR, exist_ok=True)
-    with open(file_path, "wb") as f:
-        f.write(content)
+    # Save to BOTH storage locations
+    db_path, custom_path = await save_file_dual_storage(
+        content,
+        employee_id,
+        emp.name,
+        "photo",
+        ext
+    )
 
-    emp.photo_path = file_path
+    # Update employee record with both paths
+    emp.photo_path = db_path
+    emp.custom_photo_path = custom_path
     emp.updated_at = datetime.datetime.now()
     await emp.save()
 
-    logger.debug("Photo uploaded for employee uid=%s", employee_id)
-    return {"message": "Photo uploaded successfully", "path": file_path}
+    logger.info("Photo uploaded for employee_id=%s dual_storage=%s", employee_id, custom_path is not None)
+    return {
+        "message": "Photo uploaded successfully",
+        "db_path": db_path,
+        "custom_path": custom_path,
+        "dual_storage_enabled": custom_path is not None
+    }
 
 
 # =============================================================================
@@ -370,7 +481,7 @@ async def upload_employee_document(
     file: UploadFile = File(...),
     current_user: dict = Depends(get_current_active_user)
 ):
-    """Upload employee documents (PDF only)"""
+    """Upload employee documents with dual storage (database + custom folder)"""
     if current_user.get("role") not in ["SuperAdmin", "Admin"]:
         raise HTTPException(status_code=403, detail="Only Admins can upload employee documents.")
 
@@ -393,51 +504,96 @@ async def upload_employee_document(
     if not emp:
         raise HTTPException(status_code=404, detail="Employee not found")
 
-    # Build filename using only the integer employee_id and a timestamp (no user strings)
-    timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-    filename = f"emp_{employee_id}_{timestamp}.pdf"
-    file_path = os.path.join(DOCUMENT_DIR, filename)
+    # Save to BOTH storage locations
+    db_path, custom_path = await save_file_dual_storage(
+        content,
+        employee_id,
+        emp.name,
+        document_type,
+        "pdf"
+    )
 
-    os.makedirs(DOCUMENT_DIR, exist_ok=True)
+    # Determine old paths and update employee record fields
+    old_db_path = None
+    old_custom_path = None
 
-    # Delete old document if exists; update employee record field
-    old_path = None
     if document_type == "civil_id":
-        old_path = emp.civil_id_document_path
-        emp.civil_id_document_path = file_path
+        old_db_path = emp.civil_id_document_path
+        old_custom_path = emp.custom_civil_id_path
+        emp.civil_id_document_path = db_path
+        emp.custom_civil_id_path = custom_path
     elif document_type == "passport":
-        old_path = emp.passport_document_path
-        emp.passport_document_path = file_path
+        old_db_path = emp.passport_document_path
+        old_custom_path = emp.custom_passport_path
+        emp.passport_document_path = db_path
+        emp.custom_passport_path = custom_path
     elif document_type == "visa":
-        old_path = emp.visa_document_path
-        emp.visa_document_path = file_path
+        old_db_path = emp.visa_document_path
+        old_custom_path = emp.custom_visa_path
+        emp.visa_document_path = db_path
+        emp.custom_visa_path = custom_path
 
-    if old_path and os.path.exists(old_path):
-        try:
-            os.remove(old_path)
-        except OSError:
-            pass
-
-    with open(file_path, "wb") as f:
-        f.write(content)
+    # Remove old files
+    for old_path in [old_db_path, old_custom_path]:
+        if old_path and os.path.exists(old_path):
+            try:
+                os.remove(old_path)
+            except OSError:
+                pass
 
     emp.updated_at = datetime.datetime.now()
     await emp.save()
 
-    logger.debug("Document uploaded for employee uid=%s", employee_id)
-    return {"message": f"{document_type} document uploaded successfully", "path": file_path}
+    logger.info("Document uploaded for employee_id=%s type=%s dual_storage=%s", employee_id, document_type, custom_path is not None)
+    return {
+        "message": f"{document_type} document uploaded successfully",
+        "db_path": db_path,
+        "custom_path": custom_path,
+        "dual_storage_enabled": custom_path is not None
+    }
 
 
 # =============================================================================
 # 8. DOWNLOAD EMPLOYEE DOCUMENT / PHOTO
 # =============================================================================
-@router.get("/{employee_id}/download/{document_type}")
+@download_router.get("/{employee_id}/download/{document_type}")
 async def download_employee_document(
+    request: Request,
     employee_id: int,
     document_type: str,
-    current_user: dict = Depends(get_current_active_user)
+    token: Optional[str] = Query(None),
 ):
-    """Download employee document or photo"""
+    """
+    Download employee document or photo.
+    Accepts authentication token as query parameter for use in <img> tags,
+    or via the standard Authorization: Bearer <token> header.
+    """
+    from jose import jwt, JWTError
+    from backend.security import SECRET_KEY, ALGORITHM
+
+    # Determine the raw JWT string - prefer query param, then Authorization header
+    raw_token = token
+    if not raw_token:
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            raw_token = auth_header[len("Bearer "):]
+
+    if not raw_token:
+        raise HTTPException(status_code=401, detail="Authentication token required")
+
+    try:
+        payload = jwt.decode(raw_token, SECRET_KEY, algorithms=[ALGORITHM])
+        email = payload.get("sub")
+        if not email:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        user = await Admin.find_one(Admin.email == email)
+        if not user or not user.is_active:
+            raise HTTPException(status_code=401, detail="Invalid or inactive user")
+        current_user = payload
+    except JWTError:
+        logger.warning("Invalid or expired token used for document download (employee_id=%s)", employee_id)
+        raise HTTPException(status_code=401, detail="Invalid or expired authentication token")
+
     emp = await Employee.find_one(Employee.uid == employee_id)
     if not emp:
         raise HTTPException(status_code=404, detail="Employee not found")

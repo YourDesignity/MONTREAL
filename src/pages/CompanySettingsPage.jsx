@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, Form, InputNumber, Switch, Button, message, Row, Col, Typography, Alert, Divider, Statistic } from 'antd';
-import { SaveOutlined, SettingOutlined, DollarOutlined, ClockCircleOutlined, WarningOutlined } from '@ant-design/icons';
+import { Card, Form, InputNumber, Switch, Button, message, Row, Col, Typography, Alert, Divider, Statistic, Input } from 'antd';
+import { SaveOutlined, SettingOutlined, DollarOutlined, ClockCircleOutlined, WarningOutlined, FolderOutlined } from '@ant-design/icons';
 import { getCompanySettings, updateCompanySettings } from '../services/apiService';
 
 const { Title, Text } = Typography;
@@ -279,6 +279,81 @@ function CompanySettingsPage() {
                             </Text>
                         </Col>
                     </Row>
+
+                    <Divider titlePlacement="left">
+                        <FolderOutlined /> File Storage Configuration
+                    </Divider>
+
+                    <Alert
+                        type="info"
+                        showIcon
+                        description={
+                            <div>
+                                <p><strong>How it works:</strong> Files are saved in TWO locations:</p>
+                                <ul>
+                                    <li>📁 <strong>Database Storage:</strong> Automatic (backend/uploads) - used by the application</li>
+                                    <li>📂 <strong>Custom Folder:</strong> Your choice (e.g., D:\MONTREAL_Files) - easy manual access</li>
+                                </ul>
+                                <p style={{ marginTop: 12 }}>
+                                    <strong>Benefits:</strong> Database integrity + Easy file browsing in Windows Explorer
+                                </p>
+                            </div>
+                        }
+                        style={{ marginBottom: 24 }}
+                    />
+
+                    <Row gutter={24}>
+                        <Col xs={24} md={12}>
+                            <Form.Item
+                                name="enable_local_storage"
+                                label="Enable Custom Folder Backup"
+                                valuePropName="checked"
+                            >
+                                <Switch
+                                    checkedChildren="Enabled"
+                                    unCheckedChildren="Disabled"
+                                />
+                            </Form.Item>
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                                When enabled, files are copied to your custom folder for easy access
+                            </Text>
+                        </Col>
+
+                        <Col xs={24} md={12}>
+                            <Form.Item
+                                name="use_employee_name_in_filename"
+                                label="Use Employee Names in Filenames"
+                                valuePropName="checked"
+                            >
+                                <Switch
+                                    checkedChildren="Yes"
+                                    unCheckedChildren="No"
+                                />
+                            </Form.Item>
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                                Example: "13_Naveen_photo.jpg" vs "emp_13_20260404.jpg"
+                            </Text>
+                        </Col>
+                    </Row>
+
+                    <Form.Item
+                        name="custom_storage_path"
+                        label="Custom Storage Folder Path"
+                        tooltip="Local folder where files will be backed up (e.g., D:\MONTREAL_Files or \\NetworkShare\HR)"
+                    >
+                        <Input
+                            placeholder="D:\MONTREAL_Files"
+                            prefix={<FolderOutlined />}
+                        />
+                    </Form.Item>
+
+                    <Alert
+                        type="warning"
+                        message="Important: Folder must exist and be writable"
+                        description="Make sure the folder path exists and the application has write permissions. If the folder is unavailable, files will still be saved to the database storage."
+                        showIcon
+                        style={{ marginTop: 8, marginBottom: 16 }}
+                    />
 
                     {settings?.last_updated && (
                         <Alert
