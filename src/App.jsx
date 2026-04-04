@@ -40,6 +40,7 @@ import CompanySettingsPage from './pages/CompanySettingsPage';
 import ProjectDashboard from './pages/ProjectWorkflow/ProjectDashboard';
 import ContractManagementPage from './pages/ProjectWorkflow/ContractManagementPage';
 import SiteManagementPage from './pages/ProjectWorkflow/SiteManagementPage';
+import EmployeeAssignment from './pages/ProjectWorkflow/EmployeeAssignment';
 
 // --- Styles ---
 import "antd/dist/reset.css"; 
@@ -97,6 +98,7 @@ const App = () => {
             <Route path="project-workflow" element={<ProjectDashboard />} />
             <Route path="project-workflow/:projectId/contracts" element={<ContractManagementPage />} />
             <Route path="project-workflow/:projectId/sites" element={<SiteManagementPage />} />
+            <Route path="sites/:siteId/assign-employees" element={<EmployeeAssignment />} />
             
             {/* --- NEW FINANCIAL INTEL ROUTE --- */}
             <Route path="finance" element={<FinancePage />} /> {/* <--- ADDED THIS */}
