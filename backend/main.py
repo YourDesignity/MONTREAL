@@ -3,16 +3,17 @@
 import os
 import logging
 from contextlib import asynccontextmanager
-from datetime import timedelta
+from datetime import timedelta, datetime
 from fastapi import FastAPI, Depends, HTTPException, status, WebSocket, WebSocketDisconnect
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles 
 from passlib.context import CryptContext
+from pydantic import BaseModel, EmailStr
 
 # --- MongoDB Imports ---
 from backend.database import init_db
-from backend.models import Admin
+from backend.models import Admin, CompanySettings, Counter
 
 # --- Utilities ---
 from backend import security
@@ -148,6 +149,90 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     
     logger.info(f"AUTH SUCCESS: User '{user.email}' (ID: {user.uid}) logged in.")
     return {"access_token": access_token, "token_type": "bearer"}
+
+# =============================================================================
+# 3b. ADMIN REGISTRATION (First-Time Setup)
+# =============================================================================
+
+class RegisterAdminRequest(BaseModel):
+    email: EmailStr
+    password: str
+    full_name: str
+    company_name: str
+    setup_key: str  # Secret key to prevent unauthorized registrations
+
+@app.post("/auth/register-admin", tags=["Authentication"])
+async def register_first_admin(payload: RegisterAdminRequest):
+    """
+    Register the first SuperAdmin account.
+    Only works if NO admins exist in the database.
+    Requires a setup key for security.
+    """
+    # Validate setup key
+    SETUP_KEY = os.getenv("ADMIN_SETUP_KEY", "MONTREAL_SETUP_2026")
+    if payload.setup_key != SETUP_KEY:
+        raise HTTPException(status_code=403, detail="Invalid setup key")
+
+    # Check if any admin already exists
+    existing_admin = await Admin.find_one()
+    if existing_admin:
+        raise HTTPException(
+            status_code=400,
+            detail="Admin account already exists. Registration is disabled."
+        )
+
+    # Create SuperAdmin
+    admin = Admin(
+        uid=1,
+        email=payload.email,
+        hashed_password=pwd_context.hash(payload.password),
+        full_name=payload.full_name,
+        designation="Super Administrator",
+        role="SuperAdmin",
+        permissions=[
+            "employee:view_all",
+            "employee:create",
+            "employee:edit",
+            "employee:delete",
+            "attendance:update",
+            "payslip:generate",
+            "payslip:view_all",
+            "admin:view_all",
+            "admin:create:manager",
+            "admin:edit",
+            "admin:delete",
+            "site:create",
+            "site:view",
+            "site:edit",
+            "site:delete",
+            "schedule:edit",
+            "schedule:view_assigned"
+        ],
+        assigned_site_uids=[],
+        is_active=True,
+        has_manager_profile=False
+    )
+    await admin.insert()
+
+    # Create company settings (singleton)
+    existing_settings = await CompanySettings.find_one()
+    if not existing_settings:
+        settings = CompanySettings(uid=1)
+        await settings.insert()
+
+    # Reset counters
+    await Counter.find().delete()
+    await Counter(collection_name="admins", current_uid=1).insert()
+    await Counter(collection_name="employees", current_uid=0).insert()
+    await Counter(collection_name="manager_profiles", current_uid=0).insert()
+
+    logger.info(f"FIRST ADMIN REGISTERED: {admin.email}")
+
+    return {
+        "message": "SuperAdmin registered successfully",
+        "email": admin.email,
+        "uid": admin.uid
+    }
 
 # =============================================================================
 # 4. REGISTER ROUTERS
