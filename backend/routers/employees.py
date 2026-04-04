@@ -409,21 +409,31 @@ async def upload_employee_photo(
     if current_user.get("role") not in ["SuperAdmin", "Admin"]:
         raise HTTPException(status_code=403, detail="Only Admins can upload employee photos.")
 
-    if not file.content_type or not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="Only image files are allowed")
+    # Read file content FIRST (before any content_type check)
+    content = await file.read()
 
     # Validate file size (max 5MB)
-    content = await file.read()
     if len(content) > 5 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="File size must be less than 5MB")
 
-    # Validate file signature (magic bytes) for common image types
+    # Validate file signature (magic bytes) - PRIMARY validation
     is_jpeg = len(content) >= 3 and content[:3] == b"\xff\xd8\xff"
     is_png = len(content) >= 8 and content[:8] == b"\x89PNG\r\n\x1a\n"
     is_gif = len(content) >= 6 and content[:6] in (b"GIF87a", b"GIF89a")
     is_webp = len(content) >= 12 and content[:4] == b"RIFF" and content[8:12] == b"WEBP"
     if not (is_jpeg or is_png or is_gif or is_webp):
-        raise HTTPException(status_code=400, detail="File content does not match an allowed image format")
+        raise HTTPException(
+            status_code=400,
+            detail="File content does not match an allowed image format (JPEG, PNG, GIF, WebP)"
+        )
+
+    # Log warning if content_type header is missing/invalid (but don't fail)
+    if not file.content_type or not file.content_type.startswith("image/"):
+        logger.warning(
+            "Photo upload for employee %s has missing/invalid content_type header (got: %s), but file content is valid",
+            employee_id,
+            file.content_type or "None"
+        )
 
     emp = await Employee.find_one(Employee.uid == employee_id)
     if not emp:
@@ -442,8 +452,19 @@ async def upload_employee_photo(
         except OSError:
             pass
 
-    # Derive extension from content-type (NOT from user-provided filename)
-    ext = _CONTENT_TYPE_EXT.get(file.content_type.lower(), "jpg")
+    # Derive extension from content-type if available, otherwise from magic bytes
+    if file.content_type and file.content_type.lower() in _CONTENT_TYPE_EXT:
+        ext = _CONTENT_TYPE_EXT[file.content_type.lower()]
+    elif is_jpeg:
+        ext = "jpg"
+    elif is_png:
+        ext = "png"
+    elif is_gif:
+        ext = "gif"
+    elif is_webp:
+        ext = "webp"
+    else:
+        ext = "jpg"
 
     # Save to BOTH storage locations
     db_path, custom_path = await save_file_dual_storage(
@@ -460,7 +481,7 @@ async def upload_employee_photo(
     emp.updated_at = datetime.datetime.now()
     await emp.save()
 
-    logger.info("Photo uploaded for employee_id=%s dual_storage=%s", employee_id, custom_path is not None)
+    logger.info("Photo uploaded for employee_id=%s ext=%s dual_storage=%s", employee_id, ext, custom_path is not None)
     return {
         "message": "Photo uploaded successfully",
         "db_path": db_path,
@@ -485,20 +506,30 @@ async def upload_employee_document(
     if current_user.get("role") not in ["SuperAdmin", "Admin"]:
         raise HTTPException(status_code=403, detail="Only Admins can upload employee documents.")
 
-    if file.content_type != "application/pdf":
-        raise HTTPException(status_code=400, detail="Only PDF files are allowed")
-
     if document_type not in _VALID_DOCUMENT_TYPES:
         raise HTTPException(status_code=400, detail="Invalid document type. Must be 'civil_id', 'passport', or 'visa'.")
 
-    # Validate file size (max 10MB)
+    # Read file content FIRST (before any content_type check)
     content = await file.read()
+
+    # Validate file size (max 10MB)
     if len(content) > 10 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="File size must be less than 10MB")
 
-    # Validate PDF magic bytes
+    # Validate PDF magic bytes - PRIMARY validation
     if not (len(content) >= 4 and content[:4] == b"%PDF"):
-        raise HTTPException(status_code=400, detail="File content is not a valid PDF")
+        raise HTTPException(
+            status_code=400,
+            detail="File content is not a valid PDF document"
+        )
+
+    # Log warning if content_type header is missing/invalid (but don't fail)
+    if file.content_type != "application/pdf":
+        logger.warning(
+            "Document upload for employee %s has missing/invalid content_type header (got: %s), but file content is valid PDF",
+            employee_id,
+            file.content_type or "None"
+        )
 
     emp = await Employee.find_one(Employee.uid == employee_id)
     if not emp:
