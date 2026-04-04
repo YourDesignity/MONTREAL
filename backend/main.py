@@ -93,9 +93,6 @@ app.add_middleware(
         "Accept",
         "Origin",
         "X-Requested-With",
-        "Access-Control-Allow-Origin",
-        "Access-Control-Allow-Methods",
-        "Access-Control-Allow-Headers",
     ],
     expose_headers=["*"],
     max_age=600,  # Cache preflight for 10 minutes
