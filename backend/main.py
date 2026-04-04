@@ -100,6 +100,16 @@ app.add_middleware(
 
 logger.info("CORS Configured for Frontend Development.")
 
+
+# --- CORS DEBUGGING MIDDLEWARE ---
+@app.middleware("http")
+async def cors_debug_middleware(request, call_next):
+    origin = request.headers.get("origin")
+    logger.debug(f"CORS: {request.method} {request.url.path} from {origin}")
+    response = await call_next(request)
+    logger.debug(f"CORS Response: {response.status_code} for {request.url.path}")
+    return response
+
 # --- STATIC FILES ---
 static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
 os.makedirs(static_dir, exist_ok=True) 
