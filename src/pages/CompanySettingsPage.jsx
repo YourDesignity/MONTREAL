@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, Form, InputNumber, Switch, Button, message, Row, Col, Typography, Alert, Divider } from 'antd';
-import { SaveOutlined, SettingOutlined, DollarOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import { Card, Form, InputNumber, Switch, Button, message, Row, Col, Typography, Alert, Divider, Statistic } from 'antd';
+import { SaveOutlined, SettingOutlined, DollarOutlined, ClockCircleOutlined, WarningOutlined } from '@ant-design/icons';
 import { getCompanySettings, updateCompanySettings } from '../services/apiService';
 
 const { Title, Text } = Typography;
@@ -64,7 +64,28 @@ function CompanySettingsPage() {
                     showIcon
                     title="Admin Only"
                     description="These settings affect all payslip calculations. Changes apply to future payslips immediately."
-                    style={{ marginBottom: 24 }}
+                    style={{ marginBottom: 16 }}
+                />
+
+                <Alert
+                    type="error"
+                    showIcon
+                    title="⚠️ Critical: These Settings Affect All Future Payslips"
+                    description={
+                        <div>
+                            <p><strong>Important Notes:</strong></p>
+                            <ul>
+                                <li>✅ Changes apply <strong>immediately</strong> to all payslip calculations</li>
+                                <li>✅ Affects <strong>all employees</strong> (salaried and hourly workers)</li>
+                                <li>❌ Does NOT recalculate past/generated payslips</li>
+                                <li>📊 Test changes on a single payslip before company-wide rollout</li>
+                            </ul>
+                            <p style={{ marginTop: 12 }}>
+                                <strong>Recommended:</strong> After saving, go to Payslips → Calculate → Test with 1 employee to verify results before processing the full payroll.
+                            </p>
+                        </div>
+                    }
+                    style={{ marginBottom: 24, borderColor: '#ff4d4f' }}
                 />
 
                 <Form form={form} layout="vertical" onFinish={handleSave}>
@@ -72,12 +93,33 @@ function CompanySettingsPage() {
                         <ClockCircleOutlined /> Overtime Multipliers
                     </Divider>
 
+                    <Alert
+                        type="info"
+                        showIcon
+                        title="Normal Overtime Multiplier"
+                        description={
+                            <div>
+                                <p><strong>What this means:</strong> Employees earn this multiplier of their hourly rate for regular overtime hours.</p>
+                                <p><strong>Example:</strong> If an employee's hourly rate is 0.50 KD/hour and you set 1.25:</p>
+                                <ul>
+                                    <li>Normal hourly rate: 0.50 KD</li>
+                                    <li>OT rate: 0.50 × 1.25 = <strong>0.625 KD per hour</strong></li>
+                                    <li>10 OT hours = 10 × 0.625 = <strong>6.25 KD total OT pay</strong></li>
+                                </ul>
+                                <p style={{ marginTop: 12, color: '#fa8c16' }}>
+                                    <WarningOutlined /> <strong>Impact:</strong> Applies to all future payslip calculations for regular overtime hours logged in the Attendance page or via daily attendance overtime field.
+                                </p>
+                            </div>
+                        }
+                        style={{ marginBottom: 16 }}
+                    />
+
                     <Row gutter={24}>
                         <Col xs={24} md={12}>
                             <Form.Item
                                 name="normal_overtime_multiplier"
                                 label="Normal Overtime Rate"
-                                tooltip="Multiplier for regular overtime hours (e.g., 1.25 = 25% premium)"
+                                tooltip="Percentage multiplier for regular overtime. 1.25 means 125% of hourly rate (25% premium). Common values: 1.25 (Kuwait Labor Law standard for first 2 hours), 1.5 (after 2 hours)."
                                 rules={[{ required: true, message: 'Required' }]}
                             >
                                 <InputNumber
@@ -96,10 +138,30 @@ function CompanySettingsPage() {
                         </Col>
 
                         <Col xs={24} md={12}>
+                            <Alert
+                                type="info"
+                                showIcon
+                                title="Off-Day Overtime Multiplier"
+                                description={
+                                    <div>
+                                        <p><strong>What this means:</strong> Employees earn this multiplier for overtime worked on weekends or holidays (marked as "Offday" type in Overtime records).</p>
+                                        <p><strong>Example:</strong> If an employee's hourly rate is 0.50 KD/hour and you set 1.50:</p>
+                                        <ul>
+                                            <li>Normal hourly rate: 0.50 KD</li>
+                                            <li>Off-day OT rate: 0.50 × 1.50 = <strong>0.75 KD per hour</strong></li>
+                                            <li>8 off-day hours = 8 × 0.75 = <strong>6.00 KD total</strong></li>
+                                        </ul>
+                                        <p style={{ marginTop: 12, color: '#fa8c16' }}>
+                                            <WarningOutlined /> <strong>Impact:</strong> Only applies to overtime records explicitly marked as "Offday" type in the Overtime management page.
+                                        </p>
+                                    </div>
+                                }
+                                style={{ marginBottom: 16 }}
+                            />
                             <Form.Item
                                 name="offday_overtime_multiplier"
                                 label="Off-Day Overtime Rate"
-                                tooltip="Multiplier for off-day/weekend overtime hours"
+                                tooltip="Percentage multiplier for weekend/holiday overtime. 1.50 means 150% of hourly rate (50% premium). Kuwait Labor Law: 1.5× for first 2 hours, 2.0× after."
                                 rules={[{ required: true, message: 'Required' }]}
                             >
                                 <InputNumber
@@ -122,12 +184,44 @@ function CompanySettingsPage() {
                         <DollarOutlined /> Work Hours
                     </Divider>
 
+                    <Alert
+                        type="info"
+                        showIcon
+                        title="Standard Work Hours Per Day"
+                        description={
+                            <div>
+                                <p><strong>What this means:</strong> The number of hours in a standard workday, used to calculate hourly rates from daily/monthly salaries.</p>
+                                <p><strong>How it's used:</strong></p>
+                                <ul>
+                                    <li><strong>Daily Rate:</strong> Basic Salary ÷ Standard Days = Daily Rate</li>
+                                    <li><strong>Hourly Rate:</strong> Daily Rate ÷ Hours Per Day = Hourly Rate</li>
+                                </ul>
+                                <p><strong>Example with 8 hours:</strong></p>
+                                <ul>
+                                    <li>Employee Salary: 280 KD/month</li>
+                                    <li>Standard Days: 28</li>
+                                    <li>Daily Rate: 280 ÷ 28 = 10 KD/day</li>
+                                    <li>Hourly Rate: 10 ÷ 8 = <strong>1.25 KD/hour</strong></li>
+                                </ul>
+                                <p><strong>Example with 12 hours:</strong></p>
+                                <ul>
+                                    <li>Same salary: 280 KD/month</li>
+                                    <li>Hourly Rate: 10 ÷ 12 = <strong>0.833 KD/hour</strong></li>
+                                </ul>
+                                <p style={{ marginTop: 12, color: '#fa8c16' }}>
+                                    <WarningOutlined /> <strong>Impact:</strong> Changing this affects ALL overtime calculations and hourly employee pay rates. Higher hours = lower hourly rate (same salary spread over more hours).
+                                </p>
+                            </div>
+                        }
+                        style={{ marginBottom: 16 }}
+                    />
+
                     <Row gutter={24}>
                         <Col xs={24} md={12}>
                             <Form.Item
                                 name="standard_hours_per_day"
                                 label="Standard Hours Per Day"
-                                tooltip="Number of work hours in a standard workday (used for hourly rate calculation)"
+                                tooltip="Number of hours in a standard shift. Used to convert daily rates to hourly rates. Common: 8 hours (office), 12 hours (security/shifts)."
                                 rules={[{ required: true, message: 'Required' }]}
                             >
                                 <InputNumber
@@ -145,6 +239,31 @@ function CompanySettingsPage() {
                         </Col>
 
                         <Col xs={24} md={12}>
+                            <Alert
+                                type="info"
+                                showIcon
+                                title="Absence Deduction Policy"
+                                description={
+                                    <div>
+                                        <p><strong>What this means:</strong> Controls whether absent days are automatically deducted from salaried employees' monthly pay.</p>
+                                        <p><strong>When Enabled:</strong></p>
+                                        <ul>
+                                            <li>Absent days are calculated: Standard Days - Present Days</li>
+                                            <li>Deduction = Absent Days × Daily Rate</li>
+                                            <li>Example: 2 absent days × 10 KD/day = <strong>20 KD deducted</strong></li>
+                                        </ul>
+                                        <p><strong>When Disabled:</strong></p>
+                                        <ul>
+                                            <li>Employees receive full monthly salary regardless of absences</li>
+                                            <li>You must manually add deductions if needed</li>
+                                        </ul>
+                                        <p style={{ marginTop: 12, color: '#fa8c16' }}>
+                                            <WarningOutlined /> <strong>Impact:</strong> Only affects salaried employees (monthly fixed salary). Hourly employees are always paid based on hours worked.
+                                        </p>
+                                    </div>
+                                }
+                                style={{ marginBottom: 16 }}
+                            />
                             <Form.Item
                                 name="enable_absence_deduction"
                                 label="Absence Deductions"
@@ -167,6 +286,38 @@ function CompanySettingsPage() {
                             title={`Last updated: ${new Date(settings.last_updated).toLocaleString()} by ${settings.updated_by || 'Admin'}`}
                             style={{ marginTop: 24, marginBottom: 16 }}
                         />
+                    )}
+
+                    {settings && (
+                        <Card style={{ marginTop: 24, background: '#f0f5ff', borderColor: '#1890ff' }}>
+                            <Title level={5}>💡 Quick Preview with Current Settings</Title>
+                            <p>For an employee earning <strong>280 KD/month</strong> working <strong>28 days</strong>:</p>
+                            <Row gutter={16}>
+                                <Col span={8}>
+                                    <Statistic
+                                        title="Hourly Rate"
+                                        value={(280 / 28 / (settings.standard_hours_per_day || 8)).toFixed(3)}
+                                        suffix="KD/hr"
+                                    />
+                                </Col>
+                                <Col span={8}>
+                                    <Statistic
+                                        title="Normal OT Rate"
+                                        value={(280 / 28 / (settings.standard_hours_per_day || 8) * (settings.normal_overtime_multiplier || 1.25)).toFixed(3)}
+                                        suffix="KD/hr"
+                                        valueStyle={{ color: '#fa8c16' }}
+                                    />
+                                </Col>
+                                <Col span={8}>
+                                    <Statistic
+                                        title="Off-Day OT Rate"
+                                        value={(280 / 28 / (settings.standard_hours_per_day || 8) * (settings.offday_overtime_multiplier || 1.5)).toFixed(3)}
+                                        suffix="KD/hr"
+                                        valueStyle={{ color: '#cf1322' }}
+                                    />
+                                </Col>
+                            </Row>
+                        </Card>
                     )}
 
                     <Button
