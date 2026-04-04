@@ -37,6 +37,7 @@ from backend.routers import (
     workflow_contracts,
     workflow_sites,
     assignments,
+    temporary_assignments,
 )
 
 # --- Initialize Logger ---
@@ -175,6 +176,7 @@ app.include_router(projects.router)
 app.include_router(workflow_contracts.router)
 app.include_router(workflow_sites.router)
 app.include_router(assignments.router)
+app.include_router(temporary_assignments.router)
 
 @app.get("/", tags=["Root"])
 def read_root():

@@ -9,7 +9,7 @@ import {
   CheckCircleOutlined
 } from '@ant-design/icons';
 import { useParams } from 'react-router-dom';
-import { fetchWithAuth } from '../../utils/api';
+import { fetchWithAuth } from '../../services/apiService';
 import dayjs from 'dayjs';
 import './EmployeeAssignment.css';
 
