@@ -83,33 +83,39 @@ async def save_file_dual_storage(
     timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
 
     if settings and settings.use_employee_name_in_filename:
-        # Create clean employee name (remove special characters, keep alphanumeric/spaces/underscores/hyphens)
-        clean_name = "".join(c for c in employee_name if c.isalnum() or c in (' ', '_', '-'))
-        clean_name = clean_name.replace(' ', '_')
+        # Create clean employee name (only allow alphanumeric, underscores, hyphens - no path separators)
+        clean_name = "".join(c for c in employee_name if c.isalnum() or c in ('_', '-'))
+        # Limit length and ensure we have a safe filename component
+        clean_name = clean_name[:50] or "employee"
         filename = f"{employee_id}_{clean_name}_{file_type}.{extension}"
     else:
         filename = f"emp_{employee_id}_{file_type}_{timestamp}.{extension}"
 
+    # Ensure filename contains no path separators (defense-in-depth)
+    filename = os.path.basename(filename)
+
     # 1. SAVE TO DATABASE STORAGE (backend/uploads)
     if file_type == "photo":
-        db_path = os.path.join(PHOTO_DIR, filename)
+        db_dir = PHOTO_DIR
     else:
-        db_path = os.path.join(DOCUMENT_DIR, filename)
+        db_dir = DOCUMENT_DIR
 
-    os.makedirs(os.path.dirname(db_path), exist_ok=True)
+    db_path = os.path.join(db_dir, filename)
+    os.makedirs(db_dir, exist_ok=True)
     with open(db_path, "wb") as f:
         f.write(file_content)
 
-    logger.debug(f"File saved to database storage: {db_path}")
+    logger.debug("File saved to database storage for employee_id=%s type=%s", employee_id, file_type)
 
     # 2. SAVE TO CUSTOM LOCAL STORAGE (user-configurable folder)
     custom_path = None
 
     if settings and settings.enable_local_storage and settings.custom_storage_path:
         try:
-            base_path = settings.custom_storage_path
+            # Normalize the base path to prevent traversal via the stored setting
+            base_path = os.path.normpath(settings.custom_storage_path)
 
-            # Create organized folder structure
+            # Create organized folder structure (file_type already validated by callers)
             if file_type == "photo":
                 custom_dir = os.path.join(base_path, "employees", "photos")
             elif file_type == "civil_id":
@@ -121,16 +127,21 @@ async def save_file_dual_storage(
             else:
                 custom_dir = os.path.join(base_path, "employees", "documents")
 
+            # Ensure the resolved custom_dir is still inside base_path
+            custom_dir = os.path.normpath(custom_dir)
+            if not (custom_dir == base_path or custom_dir.startswith(base_path + os.sep)):
+                raise ValueError("Resolved custom directory is outside the configured base path")
+
             custom_path = os.path.join(custom_dir, filename)
 
             os.makedirs(custom_dir, exist_ok=True)
             with open(custom_path, "wb") as f:
                 f.write(file_content)
 
-            logger.info(f"File saved to custom storage: {custom_path}")
+            logger.info("File saved to custom storage for employee_id=%s type=%s", employee_id, file_type)
 
         except Exception as e:
-            logger.warning(f"Failed to save to custom storage: {e}")
+            logger.warning("Failed to save to custom storage for employee_id=%s: %s", employee_id, type(e).__name__)
             # Don't fail the entire upload if custom storage fails
             custom_path = None
 
@@ -449,7 +460,7 @@ async def upload_employee_photo(
     emp.updated_at = datetime.datetime.now()
     await emp.save()
 
-    logger.info(f"Photo uploaded for employee {employee_id}: DB={db_path}, Custom={custom_path}")
+    logger.info("Photo uploaded for employee_id=%s dual_storage=%s", employee_id, custom_path is not None)
     return {
         "message": "Photo uploaded successfully",
         "db_path": db_path,
@@ -533,7 +544,7 @@ async def upload_employee_document(
     emp.updated_at = datetime.datetime.now()
     await emp.save()
 
-    logger.info(f"{document_type} uploaded for employee {employee_id}: DB={db_path}, Custom={custom_path}")
+    logger.info("Document uploaded for employee_id=%s type=%s dual_storage=%s", employee_id, document_type, custom_path is not None)
     return {
         "message": f"{document_type} document uploaded successfully",
         "db_path": db_path,
@@ -579,8 +590,8 @@ async def download_employee_document(
         if not user or not user.is_active:
             raise HTTPException(status_code=401, detail="Invalid or inactive user")
         current_user = payload
-    except JWTError as e:
-        logger.warning(f"Invalid token in document download: {e}")
+    except JWTError:
+        logger.warning("Invalid or expired token used for document download (employee_id=%s)", employee_id)
         raise HTTPException(status_code=401, detail="Invalid or expired authentication token")
 
     emp = await Employee.find_one(Employee.uid == employee_id)
