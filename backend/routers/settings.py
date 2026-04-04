@@ -25,6 +25,9 @@ class UpdateSettingsRequest(BaseModel):
     offday_overtime_multiplier: Optional[float] = None
     standard_hours_per_day: Optional[int] = None
     enable_absence_deduction: Optional[bool] = None
+    custom_storage_path: Optional[str] = None
+    enable_local_storage: Optional[bool] = None
+    use_employee_name_in_filename: Optional[bool] = None
 
 # =============================================================================
 # ENDPOINTS
@@ -54,6 +57,9 @@ async def get_company_settings(current_user: dict = Depends(get_current_active_u
         "offday_overtime_multiplier": settings.offday_overtime_multiplier,
         "standard_hours_per_day": settings.standard_hours_per_day,
         "enable_absence_deduction": settings.enable_absence_deduction,
+        "custom_storage_path": settings.custom_storage_path,
+        "enable_local_storage": settings.enable_local_storage,
+        "use_employee_name_in_filename": settings.use_employee_name_in_filename,
         "last_updated": settings.updated_at.isoformat() if settings.updated_at else None,
         "updated_by": settings.updated_by_admin_name
     }

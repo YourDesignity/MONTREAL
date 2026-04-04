@@ -72,6 +72,12 @@ class Employee(Document, MemoryNode):
     # ===== EMPLOYEE PHOTO =====
     photo_path: Optional[str] = None  # Image file path
 
+    # ===== CUSTOM LOCAL STORAGE PATHS (user-accessible folder) =====
+    custom_photo_path: Optional[str] = None
+    custom_civil_id_path: Optional[str] = None
+    custom_passport_path: Optional[str] = None
+    custom_visa_path: Optional[str] = None
+
     # ===== FINANCIAL INFO =====
     basic_salary: float = 0.0
     allowance: float = 0.0
@@ -543,6 +549,11 @@ class CompanySettings(Document):
 
     # Absence Penalties
     enable_absence_deduction: bool = True         # Whether to deduct for absences
+
+    # File Storage Configuration
+    custom_storage_path: Optional[str] = None     # e.g., "D:\\MONTREAL_Files"
+    enable_local_storage: bool = True             # Enable/disable custom folder backup
+    use_employee_name_in_filename: bool = True    # Use "13_Naveen.jpg" vs "emp_13_20260404.jpg"
 
     # Metadata
     updated_at: datetime = Field(default_factory=datetime.now)

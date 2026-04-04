@@ -149,6 +149,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 
 app.include_router(admins.router)
 app.include_router(employees.router)
+app.include_router(employees.download_router)
 app.include_router(payslips.router) 
 app.include_router(attendance.router)   
 app.include_router(sites.router)
