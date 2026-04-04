@@ -461,10 +461,8 @@ async def upload_employee_photo(
         ext = "png"
     elif is_gif:
         ext = "gif"
-    elif is_webp:
-        ext = "webp"
     else:
-        ext = "jpg"
+        ext = "webp"
 
     # Save to BOTH storage locations
     db_path, custom_path = await save_file_dual_storage(
