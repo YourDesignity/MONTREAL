@@ -82,10 +82,10 @@ const Dashboard = () => {
     },
     {
       icon: <FileSearchOutlined />,
-      label: 'Workforce',
-      description: 'Allocation view',
+      label: 'Project Report',
+      description: 'Performance data',
       color: '#13c2c2',
-      onClick: () => navigate('/workforce-allocation'),
+      onClick: () => navigate('/analytics'),
     },
   ];
 

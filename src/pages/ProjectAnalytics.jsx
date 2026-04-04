@@ -223,7 +223,7 @@ const ProjectAnalytics = () => {
                 <Statistic
                   title="Total Contract Value"
                   value={`KD ${(ps.total_contract_value ?? 0).toLocaleString()}`}
-                  valueStyle={{ color: '#1677ff', fontSize: 18 }}
+                  valueStyle={{ color: '#1677ff' }}
                 />
               </Card>
             </Col>
@@ -232,7 +232,7 @@ const ProjectAnalytics = () => {
                 <Statistic
                   title="Active Contract Value"
                   value={`KD ${(ps.active_contract_value ?? 0).toLocaleString()}`}
-                  valueStyle={{ color: '#722ed1', fontSize: 18 }}
+                  valueStyle={{ color: '#722ed1' }}
                 />
               </Card>
             </Col>
@@ -391,7 +391,7 @@ const ProjectAnalytics = () => {
                   title="Total Cost (KD)"
                   value={(externalData?.total_external_cost ?? 0).toLocaleString()}
                   prefix="KD"
-                  valueStyle={{ color: '#52c41a', fontSize: 18 }}
+                  valueStyle={{ color: '#52c41a' }}
                 />
               </Card>
             </Col>
