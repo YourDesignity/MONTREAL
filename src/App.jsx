@@ -36,6 +36,11 @@ import VehicleManagementPage from './pages/VehicleManagement';
 import FinancePage from './pages/FinancePage'; // <--- NEW: Profit & Loss Page
 import CompanySettingsPage from './pages/CompanySettingsPage';
 
+// --- PROJECT WORKFLOW PAGES ---
+import ProjectDashboard from './pages/ProjectWorkflow/ProjectDashboard';
+import ContractManagementPage from './pages/ProjectWorkflow/ContractManagementPage';
+import SiteManagementPage from './pages/ProjectWorkflow/SiteManagementPage';
+
 // --- Styles ---
 import "antd/dist/reset.css"; 
 import "./assets/styles/main.css";
@@ -87,6 +92,11 @@ const App = () => {
             <Route path="inventory" element={<InventoryPage />} />
             <Route path="site-management" element={<SiteManagement />} />
             <Route path="designations" element={<DesignationManagement />} />
+
+            {/* Project Workflow System */}
+            <Route path="project-workflow" element={<ProjectDashboard />} />
+            <Route path="project-workflow/:projectId/contracts" element={<ContractManagementPage />} />
+            <Route path="project-workflow/:projectId/sites" element={<SiteManagementPage />} />
             
             {/* --- NEW FINANCIAL INTEL ROUTE --- */}
             <Route path="finance" element={<FinancePage />} /> {/* <--- ADDED THIS */}
