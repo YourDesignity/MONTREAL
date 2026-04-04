@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from beanie.operators import RegEx
 
 # --- Imports ---
-from backend.models import Employee, Attendance, Overtime, Deduction
+from backend.models import Employee, Attendance, Overtime, Deduction, CompanySettings
 from backend.security import get_current_active_user
 from backend.utils.pdf_generator import generate_payslip_pdf 
 from backend.utils.logger import setup_logger 
@@ -38,7 +38,6 @@ async def calculate_single_payslip(employee_id: int, pay_period: str) -> Optiona
     """
     try:
         # Load company settings
-        from backend.models import CompanySettings
         company_settings = await CompanySettings.find_one(CompanySettings.uid == 1)
         if not company_settings:
             # Fallback to defaults if settings not found

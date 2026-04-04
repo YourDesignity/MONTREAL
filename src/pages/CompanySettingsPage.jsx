@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, Form, InputNumber, Switch, Button, message, Row, Col, Typography, Alert, Divider } from 'antd';
 import { SaveOutlined, SettingOutlined, DollarOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import axios from 'axios';
@@ -15,7 +15,7 @@ function CompanySettingsPage() {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });
 
-    const fetchSettings = async () => {
+    const fetchSettings = useCallback(async () => {
         setLoading(true);
         try {
             const response = await axios.get('http://localhost:8000/settings/', getAuthHeaders());
@@ -26,11 +26,11 @@ function CompanySettingsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [form]);
 
     useEffect(() => {
         fetchSettings();
-    }, []);
+    }, [fetchSettings]);
 
     const handleSave = async () => {
         try {
