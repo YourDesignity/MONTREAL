@@ -90,7 +90,7 @@ async def create_contract(
 
     logger.info(f"Contract created: {contract_code} for project {project.project_code}")
 
-    return new_contract
+    return new_contract.model_dump(mode='json')
 
 
 @router.get("/", response_model=List[dict])
@@ -118,7 +118,7 @@ async def get_all_contracts(
         await contract.calculate_duration()
 
     logger.info(f"Retrieved {len(contracts)} contracts")
-    return contracts
+    return [c.model_dump(mode='json') for c in contracts]
 
 
 @router.get("/{contract_id}")
@@ -139,8 +139,8 @@ async def get_contract_details(
     sites = await Site.find(Site.contract_id == contract_id).to_list()
 
     return {
-        "contract": contract,
-        "sites": sites
+        "contract": contract.model_dump(mode='json'),
+        "sites": [s.model_dump(mode='json') for s in sites]
     }
 
 
@@ -171,7 +171,7 @@ async def update_contract(
 
     logger.info(f"Contract {contract_id} updated")
 
-    return contract
+    return contract.model_dump(mode='json')
 
 
 @router.delete("/{contract_id}", status_code=204)

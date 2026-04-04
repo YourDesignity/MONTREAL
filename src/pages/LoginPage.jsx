@@ -5,8 +5,6 @@ import {
   Input,
   Button,
   Checkbox,
-  Card,
-  Typography,
   message,
   Tabs,
 } from "antd";
@@ -19,8 +17,8 @@ import {
 } from "@ant-design/icons";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
+import "../styles/LoginPage.css";
 
-const { Title, Text } = Typography;
 const API_BASE_URL = "http://127.0.0.1:8000";
 
 const LoginPage = () => {
@@ -99,9 +97,9 @@ const LoginPage = () => {
   const tabItems = [
     {
       key: "login",
-      label: "Login",
+      label: "Sign In",
       children: (
-        <Form form={form} name="login" onFinish={onFinish} layout="vertical">
+        <Form form={form} name="login" onFinish={onFinish} layout="vertical" className="login-form">
           <Form.Item
             name="email"
             rules={[
@@ -143,7 +141,7 @@ const LoginPage = () => {
               loading={loading}
               block
               size="large"
-              style={{ borderRadius: 8 }}
+              className="login-btn"
             >
               SIGN IN
             </Button>
@@ -160,6 +158,7 @@ const LoginPage = () => {
           name="register"
           onFinish={handleRegister}
           layout="vertical"
+          className="login-form"
         >
           <Form.Item
             name="full_name"
@@ -257,7 +256,7 @@ const LoginPage = () => {
               loading={registerLoading}
               block
               size="large"
-              style={{ borderRadius: 8 }}
+              className="login-btn"
             >
               Register SuperAdmin
             </Button>
@@ -268,38 +267,29 @@ const LoginPage = () => {
   ];
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-        padding: "20px",
-      }}
-    >
-      <Card
-        style={{
-          width: "100%",
-          maxWidth: 450,
-          borderRadius: 16,
-          boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
-        }}
-      >
-        <div style={{ textAlign: "center", marginBottom: 24 }}>
-          <Title level={2} style={{ marginBottom: 8, color: "#667eea" }}>
-            Montreal Management
-          </Title>
-          <Text type="secondary">Payroll &amp; Workforce Management System</Text>
+    <div className="login-container">
+      {/* Animated Background */}
+      <div className="animated-bg">
+        <div className="bg-gradient gradient-1"></div>
+        <div className="bg-gradient gradient-2"></div>
+        <div className="bg-gradient gradient-3"></div>
+      </div>
+
+      {/* Login Card */}
+      <div className="login-card">
+        <div className="login-header">
+          <h1 className="login-title">Montreal International</h1>
+          <p className="login-subtitle">Payroll &amp; Workforce Management System</p>
         </div>
 
         <Tabs
           activeKey={activeTab}
           onChange={setActiveTab}
           centered
+          className="login-tabs"
           items={tabItems}
         />
-      </Card>
+      </div>
     </div>
   );
 };
