@@ -242,7 +242,6 @@ const LoginPage = () => {
             rules={[
               { required: true, message: "Please enter the setup key" },
             ]}
-            help="Default: MONTREAL_SETUP_2026"
           >
             <Input
               prefix={<KeyOutlined />}

@@ -220,11 +220,14 @@ async def register_first_admin(payload: RegisterAdminRequest):
         settings = CompanySettings(uid=1)
         await settings.insert()
 
-    # Reset counters
-    await Counter.find().delete()
-    await Counter(collection_name="admins", current_uid=1).insert()
-    await Counter(collection_name="employees", current_uid=0).insert()
-    await Counter(collection_name="manager_profiles", current_uid=0).insert()
+    # Initialize counters (upsert to avoid wiping unrelated counters)
+    for coll_name, start_uid in [("admins", 1), ("employees", 0), ("manager_profiles", 0)]:
+        existing_counter = await Counter.find_one(Counter.collection_name == coll_name)
+        if existing_counter:
+            existing_counter.current_uid = start_uid
+            await existing_counter.save()
+        else:
+            await Counter(collection_name=coll_name, current_uid=start_uid).insert()
 
     logger.info(f"FIRST ADMIN REGISTERED: {admin.email}")
 
