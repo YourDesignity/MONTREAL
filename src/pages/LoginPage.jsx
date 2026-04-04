@@ -1,46 +1,50 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
-  Layout,
-  Menu,
-  Button,
-  Row,
-  Col,
-  Typography,
   Form,
   Input,
-  Switch,
+  Button,
+  Checkbox,
+  Card,
+  Typography,
   message,
+  Tabs,
 } from "antd";
 import {
-  TwitterOutlined,
-  InstagramOutlined,
-  GithubOutlined,
+  UserOutlined,
+  LockOutlined,
+  MailOutlined,
+  HomeOutlined,
+  KeyOutlined,
 } from "@ant-design/icons";
 import { useAuth } from "../context/AuthContext";
+import axios from "axios";
 
-const signinbg = "https://assets-v2.lottiefiles.com/a/30812cc4-1175-11ee-9129-134c71276cc8/Ws4zxxFQvP.gif";
-
-const { Title } = Typography;
-const { Header, Footer, Content } = Layout;
+const { Title, Text } = Typography;
+const API_BASE_URL = "http://127.0.0.1:8000";
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [loading, setLoading] = useState(false);
-  
-  // Create Form Instance
-  const [form] = Form.useForm();
+  const [registerLoading, setRegisterLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [activeTab, setActiveTab] = useState("login");
 
-  // Load Saved Credentials
+  const [form] = Form.useForm();
+  const [registerForm] = Form.useForm();
+
+  // Load saved credentials on mount
   useEffect(() => {
-    const savedUser = localStorage.getItem("rememberedUser");
-    if (savedUser) {
-      const parsedUser = JSON.parse(savedUser);
+    const savedEmail = localStorage.getItem("montreal_email");
+    const savedPassword = localStorage.getItem("montreal_password");
+    const savedRemember = localStorage.getItem("montreal_remember");
+
+    if (savedRemember === "true" && savedEmail && savedPassword) {
+      setRememberMe(true);
       form.setFieldsValue({
-        email: parsedUser.email,
-        password: parsedUser.password,
-        remember: true,
+        email: savedEmail,
+        password: atob(savedPassword),
       });
     }
   }, [form]);
@@ -49,15 +53,16 @@ const LoginPage = () => {
     setLoading(true);
     try {
       await login(values.email, values.password);
-      
-      // Handle "Remember Me" Logic
-      if (values.remember) {
-        localStorage.setItem(
-          "rememberedUser",
-          JSON.stringify({ email: values.email, password: values.password })
-        );
+
+      // Handle Remember Me
+      if (rememberMe) {
+        localStorage.setItem("montreal_email", values.email);
+        localStorage.setItem("montreal_password", btoa(values.password));
+        localStorage.setItem("montreal_remember", "true");
       } else {
-        localStorage.removeItem("rememberedUser");
+        localStorage.removeItem("montreal_email");
+        localStorage.removeItem("montreal_password");
+        localStorage.removeItem("montreal_remember");
       }
 
       message.success("Login successful!");
@@ -69,154 +74,233 @@ const LoginPage = () => {
     }
   };
 
-  const onFinishFailed = (errorInfo) => {
-    console.log("Failed:", errorInfo);
-    message.error("Please fill in all required fields.");
+  const handleRegister = async (values) => {
+    setRegisterLoading(true);
+    try {
+      await axios.post(`${API_BASE_URL}/auth/register-admin`, {
+        email: values.email,
+        password: values.password,
+        full_name: values.full_name,
+        company_name: values.company_name,
+        setup_key: values.setup_key,
+      });
+
+      message.success("SuperAdmin registered successfully! Please login.");
+      registerForm.resetFields();
+      setActiveTab("login");
+    } catch (error) {
+      const errorMsg = error.response?.data?.detail || "Registration failed";
+      message.error(errorMsg);
+    } finally {
+      setRegisterLoading(false);
+    }
   };
 
-  // --- Menu Items for Header ---
-  const headerMenuItems = [
+  const tabItems = [
     {
-      key: "1",
-      label: (
-        <Link to="/dashboard">
-          <b>LOGIN</b>
-        </Link>
+      key: "login",
+      label: "Login",
+      children: (
+        <Form form={form} name="login" onFinish={onFinish} layout="vertical">
+          <Form.Item
+            name="email"
+            rules={[
+              { required: true, message: "Please enter your email" },
+              { type: "email", message: "Please enter a valid email" },
+            ]}
+          >
+            <Input
+              prefix={<UserOutlined />}
+              placeholder="Email"
+              size="large"
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="password"
+            rules={[{ required: true, message: "Please enter your password" }]}
+          >
+            <Input.Password
+              prefix={<LockOutlined />}
+              placeholder="Password"
+              size="large"
+            />
+          </Form.Item>
+
+          <Form.Item style={{ marginBottom: 16 }}>
+            <Checkbox
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+            >
+              Remember me
+            </Checkbox>
+          </Form.Item>
+
+          <Form.Item>
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={loading}
+              block
+              size="large"
+              style={{ borderRadius: 8 }}
+            >
+              SIGN IN
+            </Button>
+          </Form.Item>
+        </Form>
+      ),
+    },
+    {
+      key: "register",
+      label: "Register",
+      children: (
+        <Form
+          form={registerForm}
+          name="register"
+          onFinish={handleRegister}
+          layout="vertical"
+        >
+          <Form.Item
+            name="full_name"
+            rules={[{ required: true, message: "Please enter your full name" }]}
+          >
+            <Input
+              prefix={<UserOutlined />}
+              placeholder="Full Name"
+              size="large"
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="email"
+            rules={[
+              { required: true, message: "Please enter your email" },
+              { type: "email", message: "Please enter a valid email" },
+            ]}
+          >
+            <Input
+              prefix={<MailOutlined />}
+              placeholder="Email"
+              size="large"
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="company_name"
+            rules={[
+              { required: true, message: "Please enter company name" },
+            ]}
+          >
+            <Input
+              prefix={<HomeOutlined />}
+              placeholder="Company Name"
+              size="large"
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="password"
+            rules={[
+              { required: true, message: "Please enter a password" },
+              { min: 6, message: "Password must be at least 6 characters" },
+            ]}
+          >
+            <Input.Password
+              prefix={<LockOutlined />}
+              placeholder="Password"
+              size="large"
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="confirm_password"
+            dependencies={["password"]}
+            rules={[
+              { required: true, message: "Please confirm your password" },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value || getFieldValue("password") === value) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(
+                    new Error("Passwords do not match")
+                  );
+                },
+              }),
+            ]}
+          >
+            <Input.Password
+              prefix={<LockOutlined />}
+              placeholder="Confirm Password"
+              size="large"
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="setup_key"
+            rules={[
+              { required: true, message: "Please enter the setup key" },
+            ]}
+          >
+            <Input
+              prefix={<KeyOutlined />}
+              placeholder="Setup Key"
+              size="large"
+            />
+          </Form.Item>
+
+          <Form.Item style={{ marginTop: 8 }}>
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={registerLoading}
+              block
+              size="large"
+              style={{ borderRadius: 8 }}
+            >
+              Register SuperAdmin
+            </Button>
+          </Form.Item>
+        </Form>
       ),
     },
   ];
 
-  // --- Menu Items for Footer ---
-  const footerSocialItems = [
-    {
-      key: "twitter",
-      label: <a href="https://twitter.com"><TwitterOutlined style={{ color: "#8c8c8c" }} /></a>,
-    },
-    {
-      key: "instagram",
-      label: <a href="https://instagram.com"><InstagramOutlined style={{ color: "#8c8c8c" }} /></a>,
-    },
-    {
-      key: "github",
-      label: <a href="https://github.com"><GithubOutlined style={{ color: "#8c8c8c" }} /></a>,
-    },
-  ];
-
   return (
-    <Layout 
-      className="layout-default layout-signin"
-      style={{ 
-        height: "100vh",      
-        overflow: "hidden",   
-        backgroundColor: "#ffffff" 
-      }} 
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+        padding: "20px",
+      }}
     >
-      <Header style={{ background: "#ffffff", padding: "0 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div className="header-brand">
-          <h5 style={{ color: "#141414", margin: 0, fontSize: "18px", fontWeight: "bold" }}>Montreal Intl.</h5>
+      <Card
+        style={{
+          width: "100%",
+          maxWidth: 450,
+          borderRadius: 16,
+          boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+        }}
+      >
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
+          <Title level={2} style={{ marginBottom: 8, color: "#667eea" }}>
+            Montreal Management
+          </Title>
+          <Text type="secondary">Payroll &amp; Workforce Management System</Text>
         </div>
-        
-        <div className="header-nav" style={{ flex: 1, display: "flex", justifyContent: "flex-end", marginRight: "20px" }}>
-           <Menu 
-             mode="horizontal" 
-             defaultSelectedKeys={["1"]} 
-             items={headerMenuItems} 
-             style={{ borderBottom: "none", minWidth: "100px", justifyContent: "end" }}
-           />
-        </div>
 
-        <div className="header-btn">
-          <Button type="primary">ADMIN PORTAL</Button>
-        </div>
-      </Header>
-      
-      <Content className="signin" style={{ backgroundColor: "#ffffff", flex: 1, display: 'flex', alignItems: 'center' }}>
-        <Row gutter={[24, 0]} justify="space-around" align="middle" style={{ width: '100%', margin: 0 }}>
-          <Col
-            xs={{ span: 24 }}
-            lg={{ span: 6, offset: 2 }}
-            md={{ span: 12 }}
-            style={{ padding: "20px" }}
-          >
-            <Title className="mb-15">Sign In</Title>
-            <Title className="font-regular text-muted" level={5} style={{ color: "#8c8c8c", marginBottom: "30px" }}>
-              Enter your email and password to sign in
-            </Title>
-            
-            <Form
-              form={form}
-              onFinish={onFinish}
-              onFinishFailed={onFinishFailed}
-              layout="vertical"
-              className="row-col"
-              initialValues={{ remember: false }}
-            >
-              <Form.Item
-                className="username"
-                label="Email"
-                name="email"
-                rules={[{ required: true, message: "Input email!", type: "email" }]}
-              >
-                <Input placeholder="Email" size="large" />
-              </Form.Item>
-
-              <Form.Item
-                className="username"
-                label="Password"
-                name="password"
-                rules={[{ required: true, message: "Input password!" }]}
-              >
-                <Input.Password placeholder="Password" size="large" />
-              </Form.Item>
-
-              <Form.Item style={{ marginBottom: "20px" }}>
-                <div style={{ display: "flex", alignItems: "center" }}>
-                  <Form.Item name="remember" valuePropName="checked" noStyle>
-                    <Switch />
-                  </Form.Item>
-                  <span style={{ marginLeft: "10px", color: "#8c8c8c" }}>Remember me</span>
-                </div>
-              </Form.Item>
-
-              <Form.Item>
-                <Button type="primary" htmlType="submit" style={{ width: "100%" }} loading={loading} size="large">
-                  SIGN IN
-                </Button>
-              </Form.Item>
-            </Form>
-          </Col>
-          
-          <Col
-            className="sign-img"
-            style={{ padding: 12 }}
-            xs={{ span: 24 }}
-            lg={{ span: 12 }}
-            md={{ span: 12 }}
-          >
-            <img 
-              src={signinbg} 
-              alt="Background" 
-              style={{ width: '100%', borderRadius: 12, maxHeight: '80vh', objectFit: 'contain' }} 
-            />
-          </Col>
-        </Row>
-      </Content>
-      
-      <Footer style={{ background: "#ffffff", color: "#8c8c8c", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 50px" }}>
-        <p className="copyright" style={{ margin: "0" }}>
-          Copyright © {new Date().getFullYear()} Montreal Intl | Designed by{" "}
-          <a href="#" style={{ color: "#8c8c8c", fontWeight: "bold" }} target="_blank" rel="noreferrer">
-            Designity
-          </a>
-        </p>
-        
-        <Menu 
-          mode="horizontal" 
-          items={footerSocialItems}
-          style={{ background: "transparent", border: "none", lineHeight: "1.5", width: "150px", justifyContent: "end" }} 
+        <Tabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          centered
+          items={tabItems}
         />
-      </Footer>
-    </Layout>
+      </Card>
+    </div>
   );
 };
 
