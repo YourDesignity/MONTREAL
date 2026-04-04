@@ -2,16 +2,17 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { 
-  Table, Card, Input, Select, Button, Space, Avatar, Typography, Tag, Row, Col, Modal, Form, message, Badge, Tooltip
+  Table, Card, Input, Select, Button, Space, Avatar, Typography, Tag, Row, Col, Modal, Form, message, Badge, Tooltip, Upload
 } from 'antd';
 import { 
   SearchOutlined, PlusOutlined, FileTextOutlined, 
-  EditOutlined, DeleteOutlined, UserOutlined, EyeOutlined, WarningOutlined
+  EditOutlined, DeleteOutlined, UserOutlined, EyeOutlined, WarningOutlined, UploadOutlined
 } from '@ant-design/icons';
 // --- Services ---
 import { 
     getEmployees, createPayslips, 
-    updateEmployee, deleteEmployee, getManagers 
+    updateEmployee, deleteEmployee, getManagers,
+    uploadEmployeePhoto, getEmployeePhoto
 } from '../services/apiService';
 import websocketService from '../services/websocketService';
 import { useAuth } from '../context/AuthContext'; 
@@ -42,6 +43,8 @@ function EmployeesPage() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingEmployee, setEditingEmployee] = useState(null);
     const [isPayslipLoading, setIsPayslipLoading] = useState(false);
+    const [editPhotoFile, setEditPhotoFile] = useState(null);
+    const [editPhotoPreview, setEditPhotoPreview] = useState(null);
 
     const isHighLevelAdmin = user?.role === 'SuperAdmin' || user?.role === 'Admin';
 
@@ -141,7 +144,26 @@ function EmployeesPage() {
     const openEditModal = (record) => {
         setEditingEmployee(record);
         form.setFieldsValue(record);
+        if (record.photo_path) {
+            setEditPhotoPreview(getEmployeePhoto(record.id || record.uid));
+        } else {
+            setEditPhotoPreview(null);
+        }
+        setEditPhotoFile(null);
         setIsEditModalOpen(true);
+    };
+
+    const handleEditPhotoChange = ({ fileList }) => {
+        if (fileList.length > 0) {
+            const file = fileList[0].originFileObj;
+            setEditPhotoFile(file);
+            const reader = new FileReader();
+            reader.onload = (e) => setEditPhotoPreview(e.target.result);
+            reader.readAsDataURL(file);
+        } else {
+            setEditPhotoFile(null);
+            setEditPhotoPreview(null);
+        }
     };
 
     const handleSaveEdit = async () => {
@@ -149,11 +171,24 @@ function EmployeesPage() {
             const vals = await form.validateFields();
             const empId = editingEmployee.id || editingEmployee.uid;
             await updateEmployee(empId, vals);
-            message.success("Employee details updated");
+            if (editPhotoFile) {
+                try {
+                    await uploadEmployeePhoto(empId, editPhotoFile);
+                    message.success("Employee details and photo updated");
+                } catch (e) {
+                    console.warn('Photo upload failed:', e);
+                    message.warning("Employee details updated, but photo upload failed");
+                }
+            } else {
+                message.success("Employee details updated");
+            }
             setIsEditModalOpen(false);
+            setEditPhotoFile(null);
+            setEditPhotoPreview(null);
             loadData();
         } catch (err) {
-            message.error("Update failed");
+            console.error("Update failed:", err);
+            message.error("Failed to update employee details. Please try again.");
         }
     };
 
@@ -164,7 +199,12 @@ function EmployeesPage() {
             key: 'name',
             render: (text, record) => (
                 <Space>
-                    <Avatar shape="square" icon={<UserOutlined />} src={record.image} />
+                    <Avatar 
+                        shape="square" 
+                        icon={<UserOutlined />} 
+                        src={record.photo_path ? getEmployeePhoto(record.id || record.uid) : null}
+                        onError={() => true}
+                    />
                     <div>
                         <Text strong style={{ display: 'block' }}>{text}</Text>
                         <Text type="secondary" style={{ fontSize: 12 }}>{record.designation}</Text>
@@ -243,41 +283,48 @@ function EmployeesPage() {
     return (
         <div className="layout-content">
             <Card variant="borderless" style={{ marginBottom: 24 }}>
-                <Row align="middle" justify="space-between" gutter={[16, 16]}>
-                    <Col xs={24} md={12}>
+                <Row gutter={[16, 16]}>
+                    <Col xs={24}>
                         <Title level={4} style={{ margin: 0 }}>
                             {isHighLevelAdmin ? "Workforce Grid" : "My Assigned Team"}
                         </Title>
                     </Col>
-                    <Col xs={24} md={12} style={{ textAlign: 'right' }}>
-                        <Space wrap>
-                            <Input 
-                                placeholder="Search employees..." 
-                                prefix={<SearchOutlined />} 
-                                onChange={e => setSearchText(e.target.value)}
-                                style={{ width: 200 }}
-                            />
-                            <Select value={selectedDesignation} onChange={setSelectedDesignation} style={{ width: 150 }}>
-                                <Option value="all">All Roles</Option>
-                                {Object.keys(designations).map(role => (
-                                    <Option key={role} value={role}>{role}</Option>
-                                ))}
-                            </Select>
-                            <Select value={selectedType} onChange={setSelectedType} style={{ width: 160 }}>
-                                <Option value="all">All Types</Option>
-                                <Option value="Company">Company</Option>
-                                <Option value="Outsourced">Outsourced</Option>
-                            </Select>
-                            {isHighLevelAdmin && (
-                                <Button 
-                                    type="primary" 
-                                    icon={<PlusOutlined />} 
-                                    onClick={() => navigate('/add-employee')}
-                                >
-                                    Add Employee
-                                </Button>
-                            )}
-                        </Space>
+                    <Col xs={24}>
+                        <Row gutter={[8, 8]} justify="space-between" align="middle">
+                            <Col xs={24} sm={24} md={16} lg={16}>
+                                <Space wrap size={8} style={{ width: '100%' }}>
+                                    <Input 
+                                        placeholder="Search employees..." 
+                                        prefix={<SearchOutlined />} 
+                                        onChange={e => setSearchText(e.target.value)}
+                                        style={{ width: 200, minWidth: 150 }}
+                                    />
+                                    <Select value={selectedDesignation} onChange={setSelectedDesignation} style={{ width: 150, minWidth: 120 }}>
+                                        <Option value="all">All Roles</Option>
+                                        {Object.keys(designations).map(role => (
+                                            <Option key={role} value={role}>{role}</Option>
+                                        ))}
+                                    </Select>
+                                    <Select value={selectedType} onChange={setSelectedType} style={{ width: 160, minWidth: 120 }}>
+                                        <Option value="all">All Types</Option>
+                                        <Option value="Company">Company</Option>
+                                        <Option value="Outsourced">Outsourced</Option>
+                                    </Select>
+                                </Space>
+                            </Col>
+                            <Col xs={24} sm={24} md={8} lg={8} style={{ textAlign: 'right' }}>
+                                {isHighLevelAdmin && (
+                                    <Button 
+                                        type="primary" 
+                                        icon={<PlusOutlined />} 
+                                        onClick={() => navigate('/add-employee')}
+                                        style={{ minWidth: 140 }}
+                                    >
+                                        Add Employee
+                                    </Button>
+                                )}
+                            </Col>
+                        </Row>
                     </Col>
                 </Row>
             </Card>
@@ -299,12 +346,43 @@ function EmployeesPage() {
             <Modal 
                 title="Edit Employee Details" 
                 open={isEditModalOpen} 
-                onCancel={() => setIsEditModalOpen(false)}
+                onCancel={() => {
+                    setIsEditModalOpen(false);
+                    setEditPhotoFile(null);
+                    setEditPhotoPreview(null);
+                }}
                 destroyOnHidden
                 onOk={handleSaveEdit}
                 okText="Save Changes"
+                width={700}
             >
                 <Form form={form} layout="vertical">
+                    <Row gutter={16} style={{ marginBottom: 16 }}>
+                        <Col span={24} style={{ textAlign: 'center' }}>
+                            <Form.Item label="Employee Photo">
+                                <Upload
+                                    accept="image/*"
+                                    maxCount={1}
+                                    beforeUpload={() => false}
+                                    onChange={handleEditPhotoChange}
+                                    showUploadList={false}
+                                >
+                                    <div style={{ cursor: 'pointer' }}>
+                                        <Avatar
+                                            size={100}
+                                            src={editPhotoPreview}
+                                            icon={<UserOutlined />}
+                                            style={{ marginBottom: 8 }}
+                                        />
+                                        <br />
+                                        <Button icon={<UploadOutlined />} size="small">
+                                            {editPhotoPreview ? 'Change Photo' : 'Upload Photo'}
+                                        </Button>
+                                    </div>
+                                </Upload>
+                            </Form.Item>
+                        </Col>
+                    </Row>
                     <Form.Item name="name" label="Full Name" rules={[{ required: true }]}><Input /></Form.Item>
                     <Form.Item name="designation" label="Designation" rules={[{ required: true }]}><Input /></Form.Item>
                     <Form.Item name="employee_type" label="Employee Type">
