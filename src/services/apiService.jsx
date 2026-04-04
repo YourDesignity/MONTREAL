@@ -91,6 +91,36 @@ export const addEmployee = (formData) => fetchWithAuth('/employees/', { method: 
 export const updateEmployee = (id, data) => fetchWithAuth(`/employees/${id}/`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteEmployee = (id) => fetchWithAuth(`/employees/${id}/`, { method: 'DELETE' });
 
+// Employee file uploads
+export const uploadEmployeePhoto = (employeeId, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return fetchWithAuth(`/employees/${employeeId}/upload-photo`, {
+        method: 'POST',
+        body: formData
+    });
+};
+
+export const uploadEmployeeDocument = (employeeId, documentType, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return fetchWithAuth(`/employees/${employeeId}/upload-document?document_type=${documentType}`, {
+        method: 'POST',
+        body: formData
+    });
+};
+
+export const downloadEmployeeDocument = (employeeId, documentType) => {
+    const token = localStorage.getItem('access_token');
+    const url = `${API_BASE_URL}/employees/${employeeId}/download/${documentType}`;
+    window.open(`${url}?token=${token}`, '_blank');
+};
+
+export const getEmployeePhoto = (employeeId) => {
+    const token = localStorage.getItem('access_token');
+    return `${API_BASE_URL}/employees/${employeeId}/download/photo?token=${token}`;
+};
+
 export const getDesignations = () => fetchWithAuth('/designations/');
 export const addDesignation = (title) => fetchWithAuth('/designations/', { method: 'POST', body: JSON.stringify({ title }) });
 export const deleteDesignation = (id) => fetchWithAuth(`/designations/${id}/`, { method: 'DELETE' });
@@ -212,6 +242,7 @@ export const updateCompanySettings = (data) => fetchWithAuth('/settings/', { met
 
 const apiService = { 
     fetchWithAuth, login, logout, getEmployees, getEmployeeById, addEmployee, updateEmployee, deleteEmployee,
+    uploadEmployeePhoto, uploadEmployeeDocument, downloadEmployeeDocument, getEmployeePhoto,
     getDesignations, addDesignation, deleteDesignation, getSites, addSite, deleteSite,
     getAttendanceByDate, getAttendanceByMonth, updateAttendance, downloadAttendancePDF,
     getDutyAssignments, saveDutyAssignments, deleteDutyAssignment,

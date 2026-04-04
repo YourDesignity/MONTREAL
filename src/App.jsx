@@ -11,6 +11,7 @@ import Main from './components/layout/Main';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './components/DashboardPage';
 import EmployeesPage from './pages/EmployeesPage';
+import EmployeeProfilePage from './pages/EmployeeProfilePage';
 import AttendancePage from './pages/AttendancePage';
 import DutyListPage from './pages/DutyList';
 import AddEmployeePage from './pages/AddEmployee';
@@ -72,6 +73,7 @@ const App = () => {
             
             {/* HR & Workforce */}
             <Route path="employees" element={<EmployeesPage />} />
+            <Route path="employees/:employeeId" element={<EmployeeProfilePage />} />
             <Route path="add-employee" element={<AddEmployeePage />} />
             <Route path="attendance" element={<AttendancePage />} />
             <Route path="duty-list" element={<DutyListPage />} />
