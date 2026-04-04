@@ -543,18 +543,18 @@ class EmployeeAssignment(Document):
     assignment_type: str = "Permanent"  # Permanent | Temporary
 
     # Project/Site Linking
-    project_id: int
-    project_name: str
-    contract_id: int
+    project_id: Optional[int] = None
+    project_name: Optional[str] = None
+    contract_id: Optional[int] = None
     site_id: int
     site_name: str
-    manager_id: int
-    manager_name: str
+    manager_id: Optional[int] = None
+    manager_name: Optional[str] = None
 
     # Assignment Period
     assigned_date: date            # When assignment was created
     assignment_start: date         # When employee starts working (usually contract start)
-    assignment_end: date           # When assignment ends (usually contract end)
+    assignment_end: Optional[date] = None  # When assignment ends (None = open-ended)
 
     # Status
     status: str = "Active"         # Active | Completed | Reassigned | Terminated
