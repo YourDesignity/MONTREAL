@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card, Table, Tag, Button, Space, Empty, message,
   Breadcrumb, Statistic, Row, Col, Popconfirm,
@@ -20,13 +20,7 @@ const ContractManagementPage = () => {
   const [loading, setLoading] = useState(false);
   const [createModalVisible, setCreateModalVisible] = useState(false);
 
-  useEffect(() => {
-    if (projectId) {
-      fetchProjectAndContracts();
-    }
-  }, [projectId]);
-
-  const fetchProjectAndContracts = async () => {
+  const fetchProjectAndContracts = useCallback(async () => {
     setLoading(true);
     try {
       const [projectData, contractsData] = await Promise.all([
@@ -41,7 +35,13 @@ const ContractManagementPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId]);
+
+  useEffect(() => {
+    if (projectId) {
+      fetchProjectAndContracts();
+    }
+  }, [projectId, fetchProjectAndContracts]);
 
   const handleDeleteContract = async (contractId) => {
     try {

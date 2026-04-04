@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card, Table, Tag, Button, Space, Empty, message,
   Breadcrumb, Statistic, Row, Col, Popconfirm, Tooltip,
@@ -24,13 +24,7 @@ const SiteManagementPage = () => {
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [assignManagerModal, setAssignManagerModal] = useState({ visible: false, site: null });
 
-  useEffect(() => {
-    if (projectId) {
-      fetchData();
-    }
-  }, [projectId]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const [projectData, contractsData, sitesData] = await Promise.all([
@@ -47,7 +41,13 @@ const SiteManagementPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId]);
+
+  useEffect(() => {
+    if (projectId) {
+      fetchData();
+    }
+  }, [projectId, fetchData]);
 
   const handleDeleteSite = async (siteId) => {
     try {
