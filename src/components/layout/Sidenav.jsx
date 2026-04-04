@@ -11,6 +11,8 @@ import {
   ClockCircleOutlined,
   SettingOutlined,
   ApartmentOutlined,
+  BarChartOutlined,
+  UsergroupAddOutlined,
 } from "@ant-design/icons";
 import { useAuth } from "../../context/AuthContext";
 
@@ -23,6 +25,10 @@ function Sidenav({ color }) {
       { path: "/dashboard", name: "Dashboard", icon: <HomeOutlined />, perm: null },
       // My Attendance is shown prominently for Site Managers
       ...(user?.role === 'Site Manager' ? [{ path: "/my-attendance", name: "My Attendance", icon: <ClockCircleOutlined />, perm: null }] : []),
+      // Phase 6: New pages (admin only)
+      { path: "/overview", name: "Overview", icon: <BarChartOutlined />, perm: 'admin:view_all' },
+      { path: "/workforce-allocation", name: "Workforce Alloc.", icon: <UsergroupAddOutlined />, perm: 'admin:view_all' },
+      { path: "/analytics", name: "Analytics", icon: <PieChartOutlined />, perm: 'admin:view_all' },
       { path: "/employees", name: "Employees", icon: <UserOutlined />, perm: null },
       { path: "/managers", name: "Managers", icon: <TeamOutlined />, perm: 'admin:view_all' },
       { path: "/manager-attendance", name: "Manager Attendance", icon: <CalendarOutlined />, perm: 'admin:view_all' },
