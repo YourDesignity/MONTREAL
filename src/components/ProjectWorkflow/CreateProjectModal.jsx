@@ -45,7 +45,8 @@ const CreateProjectModal = ({ visible, onCancel, onSuccess }) => {
 
   const handleSubmit = async () => {
     try {
-      const values = await form.validateFields();
+      await form.validateFields(['project_name', 'client_name']);
+      const values = form.getFieldsValue(true);
       setLoading(true);
 
       const data = await fetchWithAuth('/projects/', {
