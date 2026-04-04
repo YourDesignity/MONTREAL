@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from beanie.operators import RegEx
 
 # --- Imports ---
-from backend.models import Employee, Attendance, Overtime, Deduction
+from backend.models import Employee, Attendance, Overtime, Deduction, CompanySettings
 from backend.security import get_current_active_user
 from backend.utils.pdf_generator import generate_payslip_pdf 
 from backend.utils.logger import setup_logger 
@@ -37,6 +37,17 @@ async def calculate_single_payslip(employee_id: int, pay_period: str) -> Optiona
     3. Manual Deductions.
     """
     try:
+        # Load company settings
+        company_settings = await CompanySettings.find_one(CompanySettings.uid == 1)
+        if not company_settings:
+            # Fallback to defaults if settings not found
+            company_settings = CompanySettings(
+                uid=1,
+                normal_overtime_multiplier=1.25,
+                offday_overtime_multiplier=1.5,
+                standard_hours_per_day=8
+            )
+
         emp = await Employee.find_one(Employee.uid == employee_id)
         if not emp:
             logger.warning(f"Employee ID {employee_id} not found.")
@@ -68,7 +79,7 @@ async def calculate_single_payslip(employee_id: int, pay_period: str) -> Optiona
             # -- Salaried Employee --
             full_basic_salary = emp.basic_salary
             daily_rate = full_basic_salary / standard_days
-            hourly_rate = daily_rate / 8 
+            hourly_rate = daily_rate / company_settings.standard_hours_per_day
             
             # Calculate Absence Cost
             days_absent = max(0, standard_days - days_present)
@@ -79,7 +90,7 @@ async def calculate_single_payslip(employee_id: int, pay_period: str) -> Optiona
         else:
             # -- Hourly Employee --
             hourly_rate = emp.default_hourly_rate
-            earned_basic_salary = days_present * 8 * hourly_rate
+            earned_basic_salary = days_present * company_settings.standard_hours_per_day * hourly_rate
             full_basic_salary = earned_basic_salary 
             leave_deduction_amount = 0.0 
 
@@ -91,7 +102,7 @@ async def calculate_single_payslip(employee_id: int, pay_period: str) -> Optiona
         # We assume standard overtime rate (1.25x) for daily extensions
         attendance_ot_hours = sum(getattr(doc, "overtime_hours", 0) for doc in attendance_docs)
         total_ot_hours += attendance_ot_hours
-        total_overtime_salary += (attendance_ot_hours * hourly_rate * 1.25)
+        total_overtime_salary += (attendance_ot_hours * hourly_rate * company_settings.normal_overtime_multiplier)
 
         # Source B: Explicit Overtime Records (from Overtime Page)
         explicit_overtime_docs = await Overtime.find(
@@ -101,7 +112,7 @@ async def calculate_single_payslip(employee_id: int, pay_period: str) -> Optiona
 
         for ot in explicit_overtime_docs:
             # Multiplier logic: Offday = 1.5, Normal = 1.25
-            multiplier = 1.5 if getattr(ot, 'type', 'Normal') == 'Offday' else 1.25
+            multiplier = company_settings.offday_overtime_multiplier if getattr(ot, 'type', 'Normal') == 'Offday' else company_settings.normal_overtime_multiplier
             cost = ot.hours * hourly_rate * multiplier
             
             total_ot_hours += ot.hours
