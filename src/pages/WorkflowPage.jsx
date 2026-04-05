@@ -158,6 +158,7 @@ const WorkflowPage = () => {
       render: (_, r) => {
         const assigned = r.assigned_workers || 0;
         const required = r.required_workers || 0;
+        // Sites with no required workers are considered fully staffed (green)
         const ok = required === 0 || assigned >= required;
         return (
           <span style={{ color: ok ? STAT_COLORS.fulfillmentOk : STAT_COLORS.fulfillmentLow }}>
@@ -243,13 +244,13 @@ const WorkflowPage = () => {
                   value={
                     summary.totalRequired > 0
                       ? Math.round((summary.totalWorkers / summary.totalRequired) * 100)
-                      : 0
+                      : 100
                   }
                   suffix="%"
                   styles={{
                     content: {
                       color:
-                        summary.totalRequired > 0 &&
+                        summary.totalRequired === 0 ||
                         summary.totalWorkers >= summary.totalRequired
                           ? STAT_COLORS.fulfillmentOk
                           : STAT_COLORS.fulfillmentLow,

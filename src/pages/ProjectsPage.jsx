@@ -31,7 +31,7 @@ const ProjectsPage = () => {
   useEffect(() => {
     const token = localStorage.getItem('access_token');
     if (token) {
-      try { setUserRole(jwtDecode(token).role || ''); } catch (e) {}
+      try { setUserRole(jwtDecode(token).role || ''); } catch (e) { console.warn('Token decode error:', e); }
     }
     fetchProjects();
   }, []);
