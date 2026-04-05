@@ -182,7 +182,7 @@ const EmployeeProfilePage = () => {
                                     <Statistic
                                         title="ID Number"
                                         value={employee.civil_id_number || '—'}
-                                        valueStyle={{ fontSize: 16 }}
+                                        styles={{ content: { fontSize: 16 } }}
                                     />
                                     <div style={{ marginTop: 8 }}>
                                         <ExpiryBadge date={employee.civil_id_expiry} />
@@ -204,7 +204,7 @@ const EmployeeProfilePage = () => {
                                     <Statistic
                                         title="Passport Number"
                                         value={employee.passport_number || '—'}
-                                        valueStyle={{ fontSize: 16 }}
+                                        styles={{ content: { fontSize: 16 } }}
                                     />
                                     <div style={{ marginTop: 8 }}>
                                         <ExpiryBadge date={employee.passport_expiry} />
@@ -226,7 +226,7 @@ const EmployeeProfilePage = () => {
                                     <Statistic
                                         title="Status"
                                         value={employee.visa_document_path || employee.visa_path ? 'Document on file' : 'No document'}
-                                        valueStyle={{ fontSize: 16 }}
+                                        styles={{ content: { fontSize: 16 } }}
                                     />
                                     {(employee.visa_document_path || employee.visa_path) && (
                                         <Button

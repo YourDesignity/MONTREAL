@@ -153,7 +153,7 @@ function SegmentCard({ segment, config, attendance, onCheckIn, checkingIn }) {
   };
 
   return (
-    <Card style={cardStyle} bodyStyle={{ padding: '16px' }}>
+    <Card style={cardStyle} styles={{ body: { padding: '16px' } }}>
       <Space direction="vertical" style={{ width: '100%' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Space>
@@ -503,7 +503,7 @@ function ManagerMyAttendancePage() {
                 title="Full Days"
                 value={fullDays}
                 suffix={workingDays > 0 ? `/ ${workingDays}` : ''}
-                valueStyle={{ color: '#52c41a' }}
+                styles={{ content: { color: '#52c41a' } }}
                 prefix={<CheckCircleOutlined />}
               />
               {workingDays > 0 && (
@@ -522,7 +522,7 @@ function ManagerMyAttendancePage() {
                 title="Partial Days"
                 value={partialDays}
                 suffix={workingDays > 0 ? `/ ${workingDays}` : ''}
-                valueStyle={{ color: '#faad14' }}
+                styles={{ content: { color: '#faad14' } }}
                 prefix={<WarningOutlined />}
               />
               {workingDays > 0 && (
@@ -541,7 +541,7 @@ function ManagerMyAttendancePage() {
                 title="Absent Days"
                 value={absentDays}
                 suffix={workingDays > 0 ? `/ ${workingDays}` : ''}
-                valueStyle={{ color: '#ff4d4f' }}
+                styles={{ content: { color: '#ff4d4f' } }}
                 prefix={<CloseCircleOutlined />}
               />
               {workingDays > 0 && (
@@ -560,7 +560,7 @@ function ManagerMyAttendancePage() {
                 title="On-Time Rate"
                 value={onTimeRate}
                 suffix="%"
-                valueStyle={{ color: '#1890ff' }}
+                styles={{ content: { color: '#1890ff' } }}
                 prefix={<ClockCircleOutlined />}
               />
               <Progress

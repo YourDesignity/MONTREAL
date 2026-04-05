@@ -216,7 +216,7 @@ const SiteManagementPage = () => {
               title="Total Sites"
               value={sites.length}
               prefix={<EnvironmentOutlined />}
-              valueStyle={{ color: '#1890ff' }}
+              styles={{ content: { color: '#1890ff' } }}
             />
           </Card>
         </Col>
@@ -226,7 +226,7 @@ const SiteManagementPage = () => {
               title="Sites with Managers"
               value={assignedSites}
               suffix={`/ ${sites.length}`}
-              valueStyle={{ color: '#52c41a' }}
+              styles={{ content: { color: '#52c41a' } }}
             />
           </Card>
         </Col>
@@ -236,7 +236,7 @@ const SiteManagementPage = () => {
               title="Worker Fulfillment"
               value={totalAssigned}
               suffix={`/ ${totalRequired}`}
-              valueStyle={{ color: '#722ed1' }}
+              styles={{ content: { color: '#722ed1' } }}
             />
           </Card>
         </Col>

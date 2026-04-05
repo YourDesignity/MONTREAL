@@ -15,7 +15,7 @@ const QuickActionButton = ({ icon, label, description, onClick, color = '#52c41a
       border: `1px solid ${color}22`,
       transition: 'all 0.2s',
     }}
-    bodyStyle={{ padding: '20px 12px' }}
+    styles={{ body: { padding: '20px 12px' } }}
   >
     <div
       style={{

@@ -36,7 +36,7 @@ const ProjectStatusCard = ({ project }) => {
     <Card
       size="small"
       style={{ borderRadius: 10, height: '100%' }}
-      bodyStyle={{ padding: 16 }}
+      styles={{ body: { padding: 16 } }}
     >
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>

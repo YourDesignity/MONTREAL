@@ -220,7 +220,7 @@ const EmployeeAssignment = () => {
               <Statistic
                 title="Assigned Workers"
                 value={site.assigned_workers}
-                valueStyle={{ color: site.assigned_workers >= site.required_workers ? '#52c41a' : '#fa8c16' }}
+                styles={{ content: { color: site.assigned_workers >= site.required_workers ? '#52c41a' : '#fa8c16' } }}
                 prefix={<CheckCircleOutlined />}
               />
             </Card>

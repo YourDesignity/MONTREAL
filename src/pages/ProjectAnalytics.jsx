@@ -16,7 +16,7 @@ const { Title, Text } = Typography;
 
 // Simple bar chart using divs (avoids external chart library issues)
 const SimpleBarChart = ({ data, valueKey, nameKey, color = '#52c41a', maxHeight = 200 }) => {
-  if (!data || data.length === 0) return <Empty imageStyle={{ height: 40 }} />;
+  if (!data || data.length === 0) return <Empty styles={{ image: { height: 40 } }} />;
   const maxVal = Math.max(...data.map((d) => d[valueKey] || 0), 1);
   return (
     <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: maxHeight, padding: '0 4px' }}>
@@ -113,7 +113,7 @@ const ProjectAnalytics = () => {
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
-        <Spin size="large" tip="Loading analytics..." />
+        <Spin size="large" description="Loading analytics..." />
       </div>
     );
   }
@@ -214,7 +214,7 @@ const ProjectAnalytics = () => {
                 <Statistic
                   title="Total Projects"
                   value={ps.total_projects ?? 0}
-                  valueStyle={{ color: '#52c41a' }}
+                  styles={{ content: { color: '#52c41a' } }}
                 />
               </Card>
             </Col>
@@ -223,7 +223,7 @@ const ProjectAnalytics = () => {
                 <Statistic
                   title="Total Contract Value"
                   value={`KD ${(ps.total_contract_value ?? 0).toLocaleString()}`}
-                  valueStyle={{ color: '#1677ff' }}
+                  styles={{ content: { color: '#1677ff' } }}
                 />
               </Card>
             </Col>
@@ -232,7 +232,7 @@ const ProjectAnalytics = () => {
                 <Statistic
                   title="Active Contract Value"
                   value={`KD ${(ps.active_contract_value ?? 0).toLocaleString()}`}
-                  valueStyle={{ color: '#722ed1' }}
+                  styles={{ content: { color: '#722ed1' } }}
                 />
               </Card>
             </Col>
@@ -291,7 +291,7 @@ const ProjectAnalytics = () => {
                   title="Utilization Rate"
                   value={workforceData?.utilization_rate ?? 0}
                   suffix="%"
-                  valueStyle={{ color: '#52c41a' }}
+                  styles={{ content: { color: '#52c41a' } }}
                 />
                 <Progress percent={workforceData?.utilization_rate ?? 0} size="small" showInfo={false} strokeColor="#52c41a" />
               </Card>
@@ -301,7 +301,7 @@ const ProjectAnalytics = () => {
                 <Statistic
                   title="Total Employees"
                   value={workforceData?.total_company_employees ?? 0}
-                  valueStyle={{ color: '#1677ff' }}
+                  styles={{ content: { color: '#1677ff' } }}
                 />
               </Card>
             </Col>
@@ -310,7 +310,7 @@ const ProjectAnalytics = () => {
                 <Statistic
                   title="Assigned"
                   value={workforceData?.assigned_company_employees ?? 0}
-                  valueStyle={{ color: '#722ed1' }}
+                  styles={{ content: { color: '#722ed1' } }}
                 />
               </Card>
             </Col>
@@ -320,7 +320,7 @@ const ProjectAnalytics = () => {
                   title="Avg Assignment"
                   value={workforceData?.average_assignment_duration_days ?? 0}
                   suffix="days"
-                  valueStyle={{ color: '#13c2c2' }}
+                  styles={{ content: { color: '#13c2c2' } }}
                 />
               </Card>
             </Col>
@@ -372,7 +372,7 @@ const ProjectAnalytics = () => {
                 <Statistic
                   title="Total Assignments"
                   value={externalData?.total_external_assignments ?? 0}
-                  valueStyle={{ color: '#fa8c16' }}
+                  styles={{ content: { color: '#fa8c16' } }}
                 />
               </Card>
             </Col>
@@ -381,7 +381,7 @@ const ProjectAnalytics = () => {
                 <Statistic
                   title="Currently Active"
                   value={externalData?.active_external_workers ?? 0}
-                  valueStyle={{ color: '#ff4d4f' }}
+                  styles={{ content: { color: '#ff4d4f' } }}
                 />
               </Card>
             </Col>
@@ -391,7 +391,7 @@ const ProjectAnalytics = () => {
                   title="Total Cost (KD)"
                   value={(externalData?.total_external_cost ?? 0).toLocaleString()}
                   prefix="KD"
-                  valueStyle={{ color: '#52c41a' }}
+                  styles={{ content: { color: '#52c41a' } }}
                 />
               </Card>
             </Col>

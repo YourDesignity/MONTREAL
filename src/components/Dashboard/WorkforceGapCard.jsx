@@ -15,7 +15,7 @@ const WorkforceGapCard = ({ gap }) => {
     <Card
       size="small"
       style={{ borderRadius: 10, marginBottom: 8 }}
-      bodyStyle={{ padding: '12px 16px' }}
+      styles={{ body: { padding: '12px 16px' } }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
         <div>

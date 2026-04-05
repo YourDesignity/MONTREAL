@@ -412,7 +412,7 @@ const TempWorkerManagement = () => {
                                 title="Company Employees"
                                 value={companyEmployees.length}
                                 prefix={<TeamOutlined style={{ color: '#1890ff' }} />}
-                                valueStyle={{ color: '#1890ff' }}
+                                styles={{ content: { color: '#1890ff' } }}
                             />
                             <div style={{ marginTop: 8 }}>
                                 <Text type="secondary">Monthly Cost: </Text>
@@ -426,7 +426,7 @@ const TempWorkerManagement = () => {
                                 title="External Workers"
                                 value={tempWorkers.length}
                                 prefix={<UserAddOutlined style={{ color: '#fa8c16' }} />}
-                                valueStyle={{ color: '#fa8c16' }}
+                                styles={{ content: { color: '#fa8c16' } }}
                             />
                             <div style={{ marginTop: 8 }}>
                                 <Text type="secondary">Total Cost: </Text>
@@ -443,7 +443,7 @@ const TempWorkerManagement = () => {
                                 value={totalLaborCost.toFixed(3)}
                                 suffix="KD"
                                 prefix={<DollarOutlined />}
-                                valueStyle={{ color: '#52c41a' }}
+                                styles={{ content: { color: '#52c41a' } }}
                             />
                         </Card>
                     </Col>
@@ -554,10 +554,10 @@ const TempWorkerManagement = () => {
                             <Statistic
                                 title="Assigned Workers"
                                 value={site.assigned_workers || 0}
-                                valueStyle={{
+                                styles={{ content: {
                                     color: (site.assigned_workers || 0) >= (site.required_workers || 0)
                                         ? '#52c41a' : '#fa8c16'
-                                }}
+                                } }}
                             />
                         </Card>
                     </Col>
