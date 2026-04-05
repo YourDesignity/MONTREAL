@@ -134,8 +134,8 @@ DB_PORT=27017
 AUTH_SOURCE=admin
 DB_NAME=payroll_db
 
-# JWT Secret (generate a secure random string)
-SECRET_KEY=your-super-secret-key-here-change-this
+# JWT Secret (generate a secure random string — see command below)
+SECRET_KEY=REPLACE_THIS_WITH_GENERATED_KEY_FROM_COMMAND_BELOW
 
 # Access Token Expiry (in minutes)
 ACCESS_TOKEN_EXPIRE_MINUTES=43200
@@ -167,6 +167,8 @@ sudo systemctl status mongod
 
 ### **Create MongoDB User (if not exists):**
 
+> ⚠️ **Security Warning:** Replace `your_mongodb_username` and `your_secure_password` below with your own credentials. **Never use example values in production.**
+
 ```bash
 # Connect to MongoDB
 mongosh
@@ -174,10 +176,10 @@ mongosh
 # Switch to admin database
 use admin
 
-# Create admin user
+# Create admin user (replace username and password with your own!)
 db.createUser({
-  user: "destiny_mind",
-  pwd: "iamironman",
+  user: "your_mongodb_username",
+  pwd: "your_secure_password",
   roles: [
     { role: "readWrite", db: "payroll_db" },
     { role: "dbAdmin", db: "payroll_db" }
@@ -205,6 +207,8 @@ python scripts/reset_database.py --full
 # 📧 Default Admin: admin@montreal.com
 # 🔑 Default Password: admin123
 ```
+
+> ⚠️ **Security Warning:** The default admin password `admin123` is for initial setup only. **Change it immediately after your first login.**
 
 ---
 
