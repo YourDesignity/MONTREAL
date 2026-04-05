@@ -42,6 +42,7 @@ import ContractManagementPage from './pages/ProjectWorkflow/ContractManagementPa
 import SiteManagementPage from './pages/ProjectWorkflow/SiteManagementPage';
 import EmployeeAssignment from './pages/ProjectWorkflow/EmployeeAssignment';
 import TempWorkerManagement from './pages/ProjectWorkflow/TempWorkerManagement';
+import WorkflowPage from './pages/WorkflowPage';
 
 // --- PHASE 6: ANALYTICS & DASHBOARD PAGES ---
 import Dashboard from './pages/Dashboard';
@@ -111,6 +112,7 @@ const App = () => {
             <Route path="project-workflow/:projectId/sites" element={<SiteManagementPage />} />
             <Route path="sites/:siteId/assign-employees" element={<EmployeeAssignment />} />
             <Route path="sites/:siteId/workforce" element={<TempWorkerManagement />} />
+            <Route path="workflow" element={<WorkflowPage />} />
             
             {/* --- NEW FINANCIAL INTEL ROUTE --- */}
             <Route path="finance" element={<FinancePage />} /> {/* <--- ADDED THIS */}

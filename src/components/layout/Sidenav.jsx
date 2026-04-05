@@ -39,6 +39,7 @@ function Sidenav({ color }) {
       { path: "/inventory", name: "Inventory", icon: <DatabaseOutlined />, perm: 'employee:view_all' },
       { path: "/projects", name: "Projects", icon: <ProjectOutlined />, perm: 'employee:view_all' },
       { path: "/project-workflow", name: "Project Workflow", icon: <ApartmentOutlined />, perm: 'admin:view_all' },
+      { path: "/workflow", name: "Workflow Overview", icon: <ApartmentOutlined />, perm: 'admin:view_all' },
       
       // --- RESTRICTED FINANCE ITEM (ADMIN ONLY) ---
       { 
