@@ -92,7 +92,7 @@ const Dashboard = () => {
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
-        <Spin size="large" tip="Loading dashboard..." />
+        <Spin size="large" description="Loading dashboard..." />
       </div>
     );
   }
@@ -135,7 +135,7 @@ const Dashboard = () => {
               title="Total Projects"
               value={s.total_projects ?? 0}
               prefix={<ProjectOutlined style={{ color: '#52c41a' }} />}
-              valueStyle={{ color: '#52c41a', fontSize: 22 }}
+              styles={{ content: { color: '#52c41a', fontSize: 22 } }}
             />
             <div style={{ marginTop: 4 }}>
               <Tag color="green" style={{ fontSize: 10 }}>{s.active_projects ?? 0} Active</Tag>
@@ -150,7 +150,7 @@ const Dashboard = () => {
               title="Total Employees"
               value={s.total_employees ?? 0}
               prefix={<TeamOutlined style={{ color: '#1677ff' }} />}
-              valueStyle={{ color: '#1677ff', fontSize: 22 }}
+              styles={{ content: { color: '#1677ff', fontSize: 22 } }}
             />
             <div style={{ marginTop: 4 }}>
               <Tag color="green" style={{ fontSize: 10 }}>{s.available_employees ?? 0} Free</Tag>
@@ -165,7 +165,7 @@ const Dashboard = () => {
               title="Active Sites"
               value={s.total_sites ?? 0}
               prefix={<ApartmentOutlined style={{ color: '#722ed1' }} />}
-              valueStyle={{ color: '#722ed1', fontSize: 22 }}
+              styles={{ content: { color: '#722ed1', fontSize: 22 } }}
             />
           </Card>
         </Col>
@@ -176,7 +176,7 @@ const Dashboard = () => {
               title="External Workers"
               value={s.active_external_workers ?? 0}
               prefix={<UserOutlined style={{ color: '#fa8c16' }} />}
-              valueStyle={{ color: '#fa8c16', fontSize: 22 }}
+              styles={{ content: { color: '#fa8c16', fontSize: 22 } }}
             />
             <Text type="secondary" style={{ fontSize: 11 }}>Currently active</Text>
           </Card>
@@ -188,7 +188,7 @@ const Dashboard = () => {
               title="Contract Alerts"
               value={s.contracts_expiring_soon ?? 0}
               prefix={<WarningOutlined style={{ color: '#ff4d4f' }} />}
-              valueStyle={{ color: '#ff4d4f', fontSize: 22 }}
+              styles={{ content: { color: '#ff4d4f', fontSize: 22 } }}
             />
             <Text type="secondary" style={{ fontSize: 11 }}>Expiring ≤ 30 days</Text>
           </Card>
@@ -201,7 +201,7 @@ const Dashboard = () => {
               value={s.workforce_utilization ?? 0}
               suffix="%"
               prefix={<AuditOutlined style={{ color: '#13c2c2' }} />}
-              valueStyle={{ color: '#13c2c2', fontSize: 22 }}
+              styles={{ content: { color: '#13c2c2', fontSize: 22 } }}
             />
             <Progress
               percent={s.workforce_utilization ?? 0}
@@ -219,7 +219,7 @@ const Dashboard = () => {
         title="⚡ Quick Actions"
         size="small"
         style={{ borderRadius: 10, marginBottom: 20 }}
-        bodyStyle={{ padding: '12px 16px' }}
+        styles={{ body: { padding: '12px 16px' } }}
       >
         <Row gutter={[12, 12]}>
           {quickActions.map((qa) => (
@@ -244,7 +244,7 @@ const Dashboard = () => {
             }
           >
             {(s.projects ?? []).length === 0 ? (
-              <Empty description="No active projects" imageStyle={{ height: 40 }} />
+              <Empty description="No active projects" styles={{ image: { height: 40 } }} />
             ) : (
               <Row gutter={[12, 12]}>
                 {(s.projects ?? []).slice(0, 6).map((project) => (
@@ -274,7 +274,7 @@ const Dashboard = () => {
             style={{ borderRadius: 10, marginBottom: 16 }}
           >
             {(s.expiring_contracts ?? []).length === 0 ? (
-              <Empty description="No contracts expiring soon" imageStyle={{ height: 40 }} />
+              <Empty description="No contracts expiring soon" styles={{ image: { height: 40 } }} />
             ) : (
               (s.expiring_contracts ?? []).map((c) => (
                 <ContractExpiryAlert key={c.contract_id} contract={c} />
@@ -302,7 +302,7 @@ const Dashboard = () => {
             }
           >
             {(s.workforce_gaps ?? []).length === 0 ? (
-              <Empty description="No workforce gaps" imageStyle={{ height: 40 }} />
+              <Empty description="No workforce gaps" styles={{ image: { height: 40 } }} />
             ) : (
               (s.workforce_gaps ?? []).slice(0, 5).map((gap) => (
                 <WorkforceGapCard key={gap.site_id} gap={gap} />

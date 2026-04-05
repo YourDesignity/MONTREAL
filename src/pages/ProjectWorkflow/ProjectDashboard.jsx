@@ -188,7 +188,7 @@ const ProjectDashboard = () => {
               title="Total Projects"
               value={stats.total}
               prefix={<ProjectOutlined />}
-              valueStyle={{ color: '#1890ff' }}
+              styles={{ content: { color: '#1890ff' } }}
             />
           </Card>
         </Col>
@@ -198,7 +198,7 @@ const ProjectDashboard = () => {
               title="Active Projects"
               value={stats.active}
               prefix={<CheckCircleOutlined />}
-              valueStyle={{ color: '#52c41a' }}
+              styles={{ content: { color: '#52c41a' } }}
             />
           </Card>
         </Col>
@@ -208,7 +208,7 @@ const ProjectDashboard = () => {
               title="Completed"
               value={stats.completed}
               prefix={<CheckCircleOutlined />}
-              valueStyle={{ color: '#1890ff' }}
+              styles={{ content: { color: '#1890ff' } }}
             />
           </Card>
         </Col>
@@ -218,7 +218,7 @@ const ProjectDashboard = () => {
               title="Total Sites"
               value={stats.totalSites}
               prefix={<EnvironmentOutlined />}
-              valueStyle={{ color: '#722ed1' }}
+              styles={{ content: { color: '#722ed1' } }}
             />
           </Card>
         </Col>
@@ -228,7 +228,7 @@ const ProjectDashboard = () => {
               title="Assigned Workers"
               value={stats.totalEmployees}
               prefix={<TeamOutlined />}
-              valueStyle={{ color: '#fa8c16' }}
+              styles={{ content: { color: '#fa8c16' } }}
             />
           </Card>
         </Col>

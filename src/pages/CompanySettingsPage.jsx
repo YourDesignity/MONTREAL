@@ -380,7 +380,7 @@ function CompanySettingsPage() {
                                         title="Normal OT Rate"
                                         value={(280 / 28 / (settings.standard_hours_per_day || 8) * (settings.normal_overtime_multiplier || 1.25)).toFixed(3)}
                                         suffix="KD/hr"
-                                        valueStyle={{ color: '#fa8c16' }}
+                                        styles={{ content: { color: '#fa8c16' } }}
                                     />
                                 </Col>
                                 <Col span={8}>
@@ -388,7 +388,7 @@ function CompanySettingsPage() {
                                         title="Off-Day OT Rate"
                                         value={(280 / 28 / (settings.standard_hours_per_day || 8) * (settings.offday_overtime_multiplier || 1.5)).toFixed(3)}
                                         suffix="KD/hr"
-                                        valueStyle={{ color: '#cf1322' }}
+                                        styles={{ content: { color: '#cf1322' } }}
                                     />
                                 </Col>
                             </Row>

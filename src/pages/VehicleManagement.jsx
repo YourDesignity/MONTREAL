@@ -220,7 +220,7 @@ function VehicleManagementPage() {
         </Col>
         <Col xs={24} sm={8}>
           <Card bordered={false} style={uiStyles.actionCard}>
-            <Statistic title="Live Trips" value={activeTripsCount} valueStyle={{ color: '#3f8600' }} prefix={<RiseOutlined />} />
+            <Statistic title="Live Trips" value={activeTripsCount} styles={{ content: { color: '#3f8600' } }} prefix={<RiseOutlined />} />
           </Card>
         </Col>
         <Col xs={24} sm={8}>

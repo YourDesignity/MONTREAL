@@ -340,7 +340,7 @@ const AssignTempWorkersModal = ({ visible, site, onCancel, onSuccess, onRegister
                                 value={totalEstimatedCost.toFixed(3)}
                                 suffix="KD"
                                 prefix={<DollarOutlined />}
-                                valueStyle={{ color: '#fa8c16', fontWeight: 700 }}
+                                styles={{ content: { color: '#fa8c16', fontWeight: 700 } }}
                             />
                         </Col>
                         <Col span={8}>

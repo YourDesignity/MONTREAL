@@ -162,7 +162,7 @@ const DutyListPage = () => {
         } catch (e) { message.error("Delete failed"); }
     };
 
-    if (loading) return <Spin fullscreen tip="Syncing Workforce Database..." />;
+    if (loading) return <Spin fullscreen description="Syncing Workforce Database..." />;
 
     return (
         <div className="layout-content">

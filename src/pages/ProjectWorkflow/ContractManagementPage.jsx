@@ -190,7 +190,7 @@ const ContractManagementPage = () => {
               title="Total Contracts"
               value={contracts.length}
               prefix={<FileTextOutlined />}
-              valueStyle={{ color: '#1890ff' }}
+              styles={{ content: { color: '#1890ff' } }}
             />
           </Card>
         </Col>
@@ -199,7 +199,7 @@ const ContractManagementPage = () => {
             <Statistic
               title="Active Contracts"
               value={activeContracts}
-              valueStyle={{ color: '#52c41a' }}
+              styles={{ content: { color: '#52c41a' } }}
             />
           </Card>
         </Col>
@@ -208,7 +208,7 @@ const ContractManagementPage = () => {
             <Statistic
               title="Total Value (KD)"
               value={totalValue.toLocaleString()}
-              valueStyle={{ color: '#722ed1' }}
+              styles={{ content: { color: '#722ed1' } }}
             />
           </Card>
         </Col>

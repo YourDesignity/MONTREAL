@@ -43,7 +43,7 @@ const WorkforceDashboard = () => {
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
-        <Spin size="large" tip="Loading workforce data..." />
+        <Spin size="large" description="Loading workforce data..." />
       </div>
     );
   }
@@ -94,7 +94,7 @@ const WorkforceDashboard = () => {
               title="Available"
               value={summary.available_company_employees ?? 0}
               prefix={<UserOutlined style={{ color: '#52c41a' }} />}
-              valueStyle={{ color: '#52c41a', fontSize: 22 }}
+              styles={{ content: { color: '#52c41a', fontSize: 22 } }}
             />
           </Card>
         </Col>
@@ -104,7 +104,7 @@ const WorkforceDashboard = () => {
               title="Assigned"
               value={summary.assigned_company_employees ?? 0}
               prefix={<TeamOutlined style={{ color: '#1677ff' }} />}
-              valueStyle={{ color: '#1677ff', fontSize: 22 }}
+              styles={{ content: { color: '#1677ff', fontSize: 22 } }}
             />
           </Card>
         </Col>
@@ -114,7 +114,7 @@ const WorkforceDashboard = () => {
               title="External"
               value={summary.active_external_workers ?? 0}
               prefix={<UserOutlined style={{ color: '#fa8c16' }} />}
-              valueStyle={{ color: '#fa8c16', fontSize: 22 }}
+              styles={{ content: { color: '#fa8c16', fontSize: 22 } }}
             />
           </Card>
         </Col>
@@ -124,7 +124,7 @@ const WorkforceDashboard = () => {
               title="Utilization"
               value={summary.utilization_percentage ?? 0}
               suffix="%"
-              valueStyle={{ color: '#13c2c2', fontSize: 22 }}
+              styles={{ content: { color: '#13c2c2', fontSize: 22 } }}
             />
             <Progress
               percent={summary.utilization_percentage ?? 0}
@@ -175,7 +175,7 @@ const WorkforceDashboard = () => {
           >
             <div style={{ maxHeight: 500, overflowY: 'auto' }}>
               {filteredAvailable.length === 0 ? (
-                <Empty description="No available employees" imageStyle={{ height: 40 }} />
+                <Empty description="No available employees" styles={{ image: { height: 40 } }} />
               ) : (
                 filteredAvailable.map((emp) => (
                   <WorkforceAllocationCard key={emp.employee_id} employee={emp} />
@@ -198,7 +198,7 @@ const WorkforceDashboard = () => {
             style={{ borderRadius: 10 }}
           >
             {Object.keys(projectMap).length === 0 ? (
-              <Empty description="No active project assignments" imageStyle={{ height: 40 }} />
+              <Empty description="No active project assignments" styles={{ image: { height: 40 } }} />
             ) : (
               <div style={{ maxHeight: 520, overflowY: 'auto' }}>
                 {Object.values(projectMap).map((proj) => (
@@ -220,7 +220,7 @@ const WorkforceDashboard = () => {
                           <Card
                             size="small"
                             style={{ borderRadius: 6, border: '1px solid #e8e8e8' }}
-                            bodyStyle={{ padding: '8px 12px' }}
+                            styles={{ body: { padding: '8px 12px' } }}
                           >
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                               <Text strong style={{ fontSize: 12 }}>{site.site_name}</Text>
@@ -275,7 +275,7 @@ const WorkforceDashboard = () => {
                     <Card
                       size="small"
                       style={{ borderRadius: 8, background: '#fff7e6', border: '1px solid #ffd591' }}
-                      bodyStyle={{ padding: '8px 12px' }}
+                      styles={{ body: { padding: '8px 12px' } }}
                     >
                       <Text strong style={{ fontSize: 12 }}>{t.employee_name}</Text>
                       <br />

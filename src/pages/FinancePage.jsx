@@ -44,7 +44,7 @@ const FinancePage = () => {
         );
     }
 
-    if (loading) return <div style={{padding: 100, textAlign: 'center'}}><Spin size="large" tip="Loading Confidential Data..." /></div>;
+    if (loading) return <div style={{padding: 100, textAlign: 'center'}}><Spin size="large" description="Loading Confidential Data..." /></div>;
 
     const chartConfig = {
         data: [

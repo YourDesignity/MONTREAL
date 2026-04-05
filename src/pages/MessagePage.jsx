@@ -323,16 +323,16 @@ const MessagePage = () => {
               </Space>
             }
             bordered={false}
-            bodyStyle={{ 
+            styles={{ body: { 
               height: 'calc(100% - 60px)', 
               overflowY: 'auto', 
               padding: 12 
-            }}
+            } }}
             style={{ height: '100%' }}
           >
             {loading && conversations.length === 0 && (
               <div style={{ textAlign: 'center', padding: 40 }}>
-                <Spin tip="Loading conversations..." />
+                <Spin description="Loading conversations..." />
               </div>
             )}
             
@@ -427,12 +427,12 @@ const MessagePage = () => {
               ) : "Select a conversation"
             }
             bordered={false}
-            bodyStyle={{ 
+            styles={{ body: { 
               height: 'calc(100% - 60px)', 
               display: 'flex', 
               flexDirection: 'column',
               padding: 0
-            }}
+            } }}
             style={{ height: '100%' }}
           >
             {!selectedConversation && (
