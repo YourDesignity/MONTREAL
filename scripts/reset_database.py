@@ -261,14 +261,13 @@ class DatabaseResetter:
 
             # 3. Default Designations --------------------------------------
             designations_col = self.db["designations"]
+            designation_titles = [
+                "Project Manager", "Site Engineer", "Foreman",
+                "Laborer", "Skilled Worker", "Driver", "Welder",
+            ]
             default_designations = [
-                {"uid": 1, "title": "Project Manager", "is_active": True, "specs": {}, "created_at": now, "updated_at": now},
-                {"uid": 2, "title": "Site Engineer",   "is_active": True, "specs": {}, "created_at": now, "updated_at": now},
-                {"uid": 3, "title": "Foreman",         "is_active": True, "specs": {}, "created_at": now, "updated_at": now},
-                {"uid": 4, "title": "Laborer",         "is_active": True, "specs": {}, "created_at": now, "updated_at": now},
-                {"uid": 5, "title": "Skilled Worker",  "is_active": True, "specs": {}, "created_at": now, "updated_at": now},
-                {"uid": 6, "title": "Driver",          "is_active": True, "specs": {}, "created_at": now, "updated_at": now},
-                {"uid": 7, "title": "Welder",          "is_active": True, "specs": {}, "created_at": now, "updated_at": now},
+                {"uid": i, "title": title, "is_active": True, "specs": {}, "created_at": now, "updated_at": now}
+                for i, title in enumerate(designation_titles, start=1)
             ]
             await designations_col.insert_many(default_designations)
             logger.info(
@@ -410,9 +409,5 @@ if __name__ == "__main__":
     # Default to clean mode when no mode is specified
     if not (args.full or args.clean or args.backup):
         args.clean = True
-
-    # Ensure required directories exist before the log handler writes to them
-    Path("logs").mkdir(exist_ok=True)
-    Path("backups").mkdir(exist_ok=True)
 
     asyncio.run(main(args))
