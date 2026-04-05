@@ -4,9 +4,9 @@
 # ============================================
 
 # --- Core Framework ---
-fastapi==0.104.1
+fastapi==0.120.1
 uvicorn[standard]==0.24.0
-python-multipart==0.0.6
+python-multipart==0.0.22
 pydantic==2.5.0
 pydantic-settings==2.1.0
 
@@ -16,10 +16,10 @@ beanie==1.23.6
 pymongo==4.6.0
 
 # --- Authentication & Security ---
-python-jose[cryptography]==3.3.0
+python-jose[cryptography]==3.4.0
 passlib[bcrypt]==1.7.4
 bcrypt==4.1.1
-PyJWT==2.8.0
+PyJWT==2.12.0
 
 # --- Environment & Configuration ---
 python-dotenv==1.0.0
@@ -42,14 +42,14 @@ requests==2.31.0
 websockets==12.0
 
 # --- CORS & Middleware ---
-starlette==0.27.0
+starlette==0.49.1
 
 # --- Logging & Monitoring ---
 psutil==5.9.6
 colorlog==6.8.0
 
 # --- Image Processing (Optional) ---
-Pillow==10.1.0
+Pillow==10.3.0
 
 # --- Type Checking & Validation ---
 typing-extensions==4.9.0
