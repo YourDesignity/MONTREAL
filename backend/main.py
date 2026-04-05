@@ -9,7 +9,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles 
 from passlib.context import CryptContext
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, validator
 
 # --- MongoDB Imports ---
 from backend.database import init_db
@@ -118,6 +118,16 @@ app.mount("/static", StaticFiles(directory=static_dir), name="static")
 # --- Password Hashing ---
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+
+def hash_password(password: str) -> str:
+    """Safely hash password with bcrypt, truncating to 72 bytes if necessary."""
+    encoded = password.encode("utf-8")
+    if len(encoded) > 72:
+        encoded = encoded[:72]
+        password = encoded.decode("utf-8", errors="ignore")
+        logger.debug("Password truncated to 72 bytes for bcrypt compatibility.")
+    return pwd_context.hash(password)
+
 # =============================================================================
 # 3. AUTHENTICATION (UPDATED TO INCLUDE USER ID)
 # =============================================================================
@@ -127,7 +137,12 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 
     user = await Admin.find_one(Admin.email == form_data.username)
 
-    if not user or not pwd_context.verify(form_data.password, user.hashed_password):
+    # Truncate password to 72 bytes for bcrypt compatibility
+    password_to_verify = form_data.password
+    if len(password_to_verify.encode('utf-8')) > 72:
+        password_to_verify = password_to_verify.encode('utf-8')[:72].decode('utf-8', errors='ignore')
+
+    if not user or not pwd_context.verify(password_to_verify, user.hashed_password):
         logger.warning(f"AUTH FAILED: Invalid credentials for '{form_data.username}'")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -171,6 +186,15 @@ class RegisterAdminRequest(BaseModel):
     company_name: str
     setup_key: str  # Secret key to prevent unauthorized registrations
 
+    @validator('password')
+    def validate_password(cls, v):
+        """Validate password length for bcrypt compatibility."""
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters long')
+        if len(v.encode('utf-8')) > 100:
+            raise ValueError('Password is too long (max 100 UTF-8 bytes)')
+        return v
+
 @app.post("/auth/register-admin", tags=["Authentication"])
 async def register_first_admin(payload: RegisterAdminRequest):
     """
@@ -195,7 +219,7 @@ async def register_first_admin(payload: RegisterAdminRequest):
     admin = Admin(
         uid=1,
         email=payload.email,
-        hashed_password=pwd_context.hash(payload.password),
+        hashed_password=hash_password(payload.password),
         full_name=payload.full_name,
         designation="Super Administrator",
         role="SuperAdmin",
