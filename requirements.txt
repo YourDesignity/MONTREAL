@@ -49,7 +49,7 @@ psutil==5.9.6
 colorlog==6.8.0
 
 # --- Image Processing (Optional) ---
-Pillow==10.3.0
+Pillow==12.1.1
 
 # --- Type Checking & Validation ---
 typing-extensions==4.9.0
