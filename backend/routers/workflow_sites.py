@@ -521,5 +521,5 @@ async def remove_employee_from_site(
             site.assigned_employee_ids.remove(employee_id)
         await site.update_workforce_count()
 
-    logger.info(f"Employee {employee_id} removed from site {site_id}")
+    logger.info(f"Employee removed from site {site_id}")
     return None

@@ -281,7 +281,7 @@ async def update_substitute_profile(
 
     await employee.save()
 
-    logger.info(f"Substitute profile updated for employee {employee_id}")
+    logger.info(f"Substitute profile updated successfully")
     return employee.model_dump(mode='json')
 
 

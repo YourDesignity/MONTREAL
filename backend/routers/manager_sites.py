@@ -183,6 +183,8 @@ async def record_site_attendance(
                 existing.status = record.status
                 existing.shift = record.shift
                 existing.overtime_hours = record.overtime_hours
+                # is_replacement is the legacy field; is_substitute is the new field.
+                # Both are set to ensure backward compatibility with old queries.
                 existing.is_replacement = record.is_substitute
                 existing.replacing_employee_id = record.replacing_employee_id
                 existing.replacement_reason = record.leave_reason
@@ -206,6 +208,7 @@ async def record_site_attendance(
                     status=record.status,
                     shift=record.shift,
                     overtime_hours=record.overtime_hours,
+                    # is_replacement is legacy; is_substitute is the new field.
                     is_replacement=record.is_substitute,
                     replacing_employee_id=record.replacing_employee_id,
                     replacement_reason=record.leave_reason,
@@ -223,7 +226,7 @@ async def record_site_attendance(
 
         except Exception as e:
             logger.error(f"Error recording attendance for employee {record.employee_uid}: {e}")
-            failed.append({"employee_uid": record.employee_uid, "reason": str(e)})
+            failed.append({"employee_uid": record.employee_uid, "reason": "Failed to record attendance"})
 
     logger.info(f"Attendance recorded: {len(created)} new, {len(updated)} updated, {len(failed)} failed for site {site_id}")
 

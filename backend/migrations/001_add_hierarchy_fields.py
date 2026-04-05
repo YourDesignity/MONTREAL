@@ -82,8 +82,13 @@ async def migrate():
             changed = True
 
         # If project_id is missing, set to 0 as placeholder (must be fixed manually)
+        # To identify these sites, query: Site.find(Site.project_id == 0)
+        # Then reassign them to the correct project via the workflow UI or API.
         if not getattr(site, 'project_id', None):
-            logger.warning(f"Site {site.uid} ({site.name}) has no project_id – set to 0 as placeholder")
+            logger.warning(
+                f"Site uid={site.uid} ({site.name}) has no project_id – "
+                f"set to 0 as placeholder. Reassign via the workflow UI."
+            )
             site.project_id = 0
             changed = True
 
