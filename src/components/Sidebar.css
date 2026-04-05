@@ -1,0 +1,201 @@
+/* ========================================
+   SIDEBAR BASE STYLES
+   ======================================== */
+
+.sidebar {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  color: #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.sidebar-header {
+  padding: 1.25rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+
+.sidebar-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #60a5fa;
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: 0.75rem 0;
+  overflow-y: auto;
+}
+
+/* Custom scrollbar */
+.sidebar-nav::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* ========================================
+   NAV SECTION (Collapsible Groups)
+   ======================================== */
+
+.nav-section {
+  margin-bottom: 0.25rem;
+}
+
+.nav-section-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 1rem;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nav-section-header:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #cbd5e1;
+}
+
+.nav-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nav-section-icon {
+  opacity: 0.7;
+}
+
+.nav-section-items {
+  padding-left: 0.75rem;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ========================================
+   NAV ITEMS (Links within sections)
+   ======================================== */
+
+.nav-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.6rem 0.875rem;
+  background: transparent;
+  border: none;
+  border-left: 3px solid transparent;
+  color: #94a3b8;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.nav-item:hover {
+  background: rgba(96, 165, 250, 0.1);
+  border-left-color: #60a5fa;
+  color: #e2e8f0;
+}
+
+.nav-item.active {
+  background: rgba(96, 165, 250, 0.15);
+  border-left-color: #60a5fa;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.nav-item-icon {
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.nav-item.active .nav-item-icon {
+  opacity: 1;
+  color: #60a5fa;
+}
+
+.nav-item-label {
+  flex: 1;
+}
+
+.nav-item-badge {
+  background: #ef4444;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.1rem 0.4rem;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+}
+
+/* ========================================
+   STANDALONE NAV ITEMS (Dashboard, Inventory, Messages)
+   ======================================== */
+
+.nav-item-standalone {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.125rem;
+  background: transparent;
+  border: none;
+  border-left: 3px solid transparent;
+  color: #cbd5e1;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.nav-item-standalone:hover {
+  background: rgba(96, 165, 250, 0.1);
+  border-left-color: #60a5fa;
+  color: #ffffff;
+}
+
+.nav-item-standalone.active {
+  background: rgba(96, 165, 250, 0.2);
+  border-left-color: #60a5fa;
+  color: #60a5fa;
+  font-weight: 700;
+}
