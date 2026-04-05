@@ -23,6 +23,24 @@ class MemoryNode(BaseModel):
         json_encoders = {datetime: lambda v: v.isoformat()}
 
 # =============================================================================
+# 1b. SUBSTITUTE ASSIGNMENT EMBEDDED MODEL
+# =============================================================================
+
+class SubstituteAssignment(BaseModel):
+    """Represents a temporary substitute assignment for an outsourced employee."""
+    site_id: int
+    site_name: Optional[str] = None
+    start_date: datetime
+    end_date: Optional[datetime] = None
+    reason: str  # "sick_leave" | "vacation" | "shortage" | "emergency"
+    replacing_employee_id: Optional[int] = None
+    replacing_employee_name: Optional[str] = None
+    assigned_by_manager_id: int
+    daily_rate: Optional[float] = None
+    hourly_rate: Optional[float] = None
+    status: str = "Active"  # Active | Completed | Cancelled
+
+# =============================================================================
 # 2. CORE ENTITIES
 # =============================================================================
 
@@ -117,6 +135,20 @@ class Employee(Document, MemoryNode):
     agency_contact: Optional[str] = None
     is_preferred_vendor: bool = False      # If this external worker is reliable/preferred
 
+    # ===== SUBSTITUTE MANAGEMENT FIELDS =====
+    can_be_substitute: bool = False        # Outsourced employees who can fill in as substitutes
+    substitute_availability: Optional[str] = None  # "available" | "assigned" | "unavailable"
+    substitute_rating: Optional[float] = None      # 0–5 star rating for substitute quality
+    substitute_skills: List[str] = []             # Skills/roles this substitute can cover
+
+    # Current substitute assignment (if any)
+    current_substitute_assignment: Optional[SubstituteAssignment] = None
+    substitute_assignment_history: List[SubstituteAssignment] = []
+
+    # Metrics
+    total_substitute_assignments: int = 0
+    total_days_as_substitute: int = 0
+
     class Settings:
         name = "employees"
         indexes = [
@@ -127,6 +159,8 @@ class Employee(Document, MemoryNode):
             "passport_number",
             "is_currently_assigned",
             "availability_status",
+            "can_be_substitute",
+            "substitute_availability",
         ]
 
 class Site(Document, MemoryNode):
@@ -150,6 +184,24 @@ class Site(Document, MemoryNode):
     status: str = "Active"                    # Active | Completed | On Hold
     start_date: Optional[date] = None         # When site work started
     completion_date: Optional[date] = None    # When site work completed
+
+    # ===== HEADCOUNT MANAGEMENT (NEW) =====
+    active_substitute_uids: List[int] = []    # Outsourced/substitute employees currently at this site
+
+    @property
+    def current_headcount(self) -> int:
+        """Total employees including substitutes."""
+        return len(self.assigned_employee_ids) + len(self.active_substitute_uids)
+
+    @property
+    def is_understaffed(self) -> bool:
+        """True if site has fewer workers than required."""
+        return self.required_workers > 0 and self.current_headcount < self.required_workers
+
+    @property
+    def headcount_shortage(self) -> int:
+        """How many employees the site is short."""
+        return max(0, self.required_workers - self.current_headcount)
 
     class Settings:
         name = "sites"
@@ -202,9 +254,24 @@ class Attendance(Document, MemoryNode):
     # Temporary assignment link
     temporary_assignment_id: Optional[int] = None      # Link to TemporaryAssignment if applicable
 
+    # ===== MANAGER-RECORDED ATTENDANCE FIELDS (NEW) =====
+    recorded_by_manager_id: Optional[int] = None       # Manager who recorded this attendance
+    recorded_by_manager_name: Optional[str] = None
+    is_substitute: bool = False                         # True if this is a substitute worker
+    leave_type: Optional[str] = None                   # "Sick Leave" | "Annual Leave" | "Emergency Leave"
+    leave_reason: Optional[str] = None
+    substitute_requested: bool = False                  # Manager requested substitute for absent employee
+    substitute_assigned_id: Optional[int] = None       # Substitute assigned to cover
+    notes: Optional[str] = None
+    recorded_at: datetime = Field(default_factory=datetime.now)
+
     class Settings:
         name = "attendance"
-        indexes = [[("employee_uid", 1), ("date", 1)]]
+        indexes = [
+            [("employee_uid", 1), ("date", 1)],
+            [("site_uid", 1), ("date", 1)],
+            [("recorded_by_manager_id", 1), ("date", 1)],
+        ]
 
 class Schedule(Document, MemoryNode):
     employee_uid: Optional[int] = None

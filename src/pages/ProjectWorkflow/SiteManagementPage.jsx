@@ -5,12 +5,13 @@ import {
 } from 'antd';
 import {
   PlusOutlined, ArrowLeftOutlined, EnvironmentOutlined,
-  DeleteOutlined, UserAddOutlined, UserDeleteOutlined,
+  DeleteOutlined, UserAddOutlined, UserDeleteOutlined, TeamOutlined,
 } from '@ant-design/icons';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { fetchWithAuth } from '../../services/apiService';
 import CreateSiteModal from '../../components/ProjectWorkflow/CreateSiteModal';
 import AssignManagerModal from '../../components/ProjectWorkflow/AssignManagerModal';
+import AssignEmployeeModal from '../../components/ProjectWorkflow/AssignEmployeeModal';
 
 const SiteManagementPage = () => {
   const { projectId } = useParams();
@@ -23,6 +24,7 @@ const SiteManagementPage = () => {
   const [loading, setLoading] = useState(false);
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [assignManagerModal, setAssignManagerModal] = useState({ visible: false, site: null });
+  const [assignEmployeeModal, setAssignEmployeeModal] = useState({ visible: false, site: null });
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -61,6 +63,11 @@ const SiteManagementPage = () => {
 
   const handleManagerAssigned = () => {
     setAssignManagerModal({ visible: false, site: null });
+    fetchData();
+  };
+
+  const handleEmployeeAssigned = () => {
+    setAssignEmployeeModal({ visible: false, site: null });
     fetchData();
   };
 
@@ -140,6 +147,15 @@ const SiteManagementPage = () => {
               onClick={() => setAssignManagerModal({ visible: true, site: record })}
             >
               {record.assigned_manager_name ? 'Change' : 'Assign'} Manager
+            </Button>
+          </Tooltip>
+          <Tooltip title="Assign Employees to this Site">
+            <Button
+              type="link"
+              icon={<TeamOutlined />}
+              onClick={() => setAssignEmployeeModal({ visible: true, site: record })}
+            >
+              Assign Employees
             </Button>
           </Tooltip>
           <Popconfirm
@@ -282,6 +298,15 @@ const SiteManagementPage = () => {
           site={assignManagerModal.site}
           onCancel={() => setAssignManagerModal({ visible: false, site: null })}
           onSuccess={handleManagerAssigned}
+        />
+      )}
+
+      {assignEmployeeModal.site && (
+        <AssignEmployeeModal
+          visible={assignEmployeeModal.visible}
+          site={assignEmployeeModal.site}
+          onCancel={() => setAssignEmployeeModal({ visible: false, site: null })}
+          onSuccess={handleEmployeeAssigned}
         />
       )}
     </div>

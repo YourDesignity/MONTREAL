@@ -41,6 +41,7 @@ from backend.routers import (
     temporary_assignments,
 )
 from backend.routers import workforce_analytics, project_analytics
+from backend.routers import substitutes, manager_sites
 
 # --- Initialize Logger ---
 logger = setup_logger("MainApp", log_file="logs/app_main.log", level=logging.DEBUG)
@@ -302,6 +303,8 @@ app.include_router(assignments.router)
 app.include_router(temporary_assignments.router)
 app.include_router(workforce_analytics.router)
 app.include_router(project_analytics.router)
+app.include_router(substitutes.router)
+app.include_router(manager_sites.router)
 
 @app.get("/", tags=["Root"])
 def read_root():
