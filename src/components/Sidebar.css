@@ -2,8 +2,12 @@
    SIDEBAR - WHITE THEME
    ======================================== */
 
+:root {
+  --sidebar-width: 260px;
+}
+
 .sidebar {
-  width: 260px;
+  width: var(--sidebar-width);
   height: 100vh;
   background: #ffffff;
   color: #1e293b;
@@ -268,6 +272,8 @@
 }
 
 /* Smooth transitions */
-* {
+.nav-item,
+.nav-item-standalone,
+.nav-section-header {
   transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
