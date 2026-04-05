@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 const NavItem = ({ to, icon: Icon, label, badge }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const isActive = location.pathname === to || location.pathname === `/${to}`;
+  const isActive = location.pathname === to;
 
   return (
     <button

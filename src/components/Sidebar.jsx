@@ -37,7 +37,7 @@ const Sidebar = () => {
   }
 
   const hasPerm = (perm) => !perm || (user?.perms && user.perms.includes(perm));
-  const isActive = (path) => location.pathname === path || location.pathname === `/${path.replace(/^\//, '')}`;
+  const isActive = (path) => location.pathname === path;
   const isSiteManager = user?.role === 'Site Manager';
 
   const messagesPath = isSiteManager ? '/manager-messages' : '/messages';
@@ -60,7 +60,7 @@ const Sidebar = () => {
 
         {/* OVERVIEW Section */}
         {hasPerm('admin:view_all') && (
-          <NavSection title="OVERVIEW" icon={LuChartBar} defaultOpen={true}>
+          <NavSection title="ANALYTICS" icon={LuChartBar} defaultOpen={true}>
             <NavItem to="/analytics" icon={LuChartPie} label="Analytics" />
             <NavItem to="/overview" icon={LuChartBar} label="Overview" />
             <NavItem to="/workforce-allocation" icon={LuUsersRound} label="Workforce Alloc." />
