@@ -1,142 +1,133 @@
-import React from "react";
+import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  BiBookAlt, 
-  BiHome, 
-  BiMessage,
-  BiStats, 
-  BiTask,
-  BiCalendarCheck, 
-  BiClipboard,
-  BiUser,
-  BiCar,
-  BiSitemap,
-  BiLineChart, // <--- 1. NEW ICON FOR FINANCE
-  BiReceipt,    // <--- ICON FOR BILLING/INVOICES
-  BiCog         // <--- ICON FOR SETTINGS
-} from "react-icons/bi";
-import { FaUserShield } from "react-icons/fa";
-import { NavLink } from "react-router-dom";
+  LuLayoutDashboard,
+  LuChartBar,
+  LuUsers,
+  LuUserCog,
+  LuCalendar,
+  LuClipboardList,
+  LuDollarSign,
+  LuFolderKanban,
+  LuBuilding2,
+  LuGitBranch,
+  LuTruck,
+  LuWrench,
+  LuWallet,
+  LuPackage,
+  LuMessageSquare,
+  LuSettings,
+  LuShield,
+  LuChartPie,
+  LuChartBarBig,
+  LuUsersRound,
+} from 'react-icons/lu';
 import { useAuth } from '../context/AuthContext';
-import "../styles/sidebar.css";
-
-// 2. DEFINE THE MENU ITEMS
-const allMenuItems = [
-  {
-    path: "/dashboard",
-    name: "Dashboard",
-    icon: <BiHome className="icon" />,
-    requiredPerm: null,
-  },
-  {
-    path: "/employees", 
-    name: "Employees",
-    icon: <BiUser className="icon" />,
-    requiredPerm: null, 
-  },
-  {
-    path: "/vehicles",
-    name: "Vehicles",
-    icon: <BiCar className="icon" />,
-    requiredPerm: null,
-  },
-  {
-    path: "/attendance",
-    name: "Attendance",
-    icon: <BiCalendarCheck className="icon" />,
-    requiredPerm: 'attendance:update', 
-  },
-  {
-    path: "/duty-list",
-    name: "Duty List",
-    icon: <BiClipboard className="icon" />,
-    requiredPerm: 'schedule:edit', 
-  },
-  {
-    path: "/payslips",
-    name: "Payslips",
-    icon: <BiReceipt className="icon" />, 
-    requiredPerm: 'payslip:view_all',
-  },
-  {
-    path: "/inventory",
-    name: "Inventory",
-    icon: <BiTask className="icon" />,
-    requiredPerm: 'employee:view_all', 
-  },
-  {
-    path: "/projects",
-    name: "Projects",
-    icon: <BiStats className="icon" />,
-    requiredPerm: 'employee:view_all',
-  },
-  // --- NEW FINANCE (P&L) LINK ---
-  {
-    path: "/finance",
-    name: "Finance (P&L)",
-    icon: <BiLineChart className="icon" />, // Professional Chart Icon
-    requiredPerm: null, // Visible for testing; change to 'admin:view_all' later if needed
-  },
-  // -----------------------------
-  {
-    path: "/messages",
-    name: "Messages",
-    icon: <BiMessage className="icon" />,
-    requiredPerm: 'employee:view_all',
-  },
-  {
-    path: "/admins",
-    name: "Admins",
-    icon: <FaUserShield className="icon" />,
-    requiredPerm: 'admin:view_all', 
-  },
-  {
-    path: "/site-management",
-    name: "Site Mgmt",
-    icon: <BiSitemap className="icon" />,
-    requiredPerm: 'site:view', 
-  },
-  {
-    path: "/settings",
-    name: "Settings",
-    icon: <BiCog className="icon" />,
-    requiredPerm: 'admin:view_all',
-  },
-];
+import NavSection from './Sidebar/NavSection';
+import NavItem from './Sidebar/NavItem';
+import './Sidebar.css';
 
 const Sidebar = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   if (!user) {
     return null;
   }
 
-  // Filter items based on permissions
-  const visibleMenuItems = allMenuItems.filter(item => {
-    return !item.requiredPerm || (user.perms && user.perms.includes(item.requiredPerm));
-  });
+  const hasPerm = (perm) => !perm || (user?.perms && user.perms.includes(perm));
+  const isActive = (path) => location.pathname === path || location.pathname === `/${path.replace(/^\//, '')}`;
+  const isSiteManager = user?.role === 'Site Manager';
+
+  const messagesPath = isSiteManager ? '/manager-messages' : '/messages';
 
   return (
-    <div className="menu">
-      <div className="logo">
-        <BiBookAlt className="logo-icon" />
-        <h2>
-          Montreal <br /> International
-        </h2>
+    <aside className="sidebar">
+      <div className="sidebar-header">
+        <h1 className="sidebar-title">Montreal Intl.</h1>
       </div>
 
-      <div className="menu--list">
-        {visibleMenuItems.map((item, index) => (
-          <NavLink
-            to={item.path}
-            key={index}
-            className={({ isActive }) => (isActive ? "item active" : "item")}
+      <nav className="sidebar-nav">
+        {/* Dashboard - Always visible */}
+        <button
+          onClick={() => navigate('/dashboard')}
+          className={`nav-item-standalone ${isActive('/dashboard') ? 'active' : ''}`}
+        >
+          <LuLayoutDashboard size={20} />
+          <span>Dashboard</span>
+        </button>
+
+        {/* OVERVIEW Section */}
+        {hasPerm('admin:view_all') && (
+          <NavSection title="OVERVIEW" icon={LuChartBar} defaultOpen={true}>
+            <NavItem to="/analytics" icon={LuChartPie} label="Analytics" />
+            <NavItem to="/overview" icon={LuChartBar} label="Overview" />
+            <NavItem to="/workforce-allocation" icon={LuUsersRound} label="Workforce Alloc." />
+          </NavSection>
+        )}
+
+        {/* WORKFORCE Section */}
+        <NavSection title="WORKFORCE" icon={LuUsers} defaultOpen={true}>
+          {hasPerm(null) && <NavItem to="/employees" icon={LuUsers} label="Employees" />}
+          {hasPerm('admin:view_all') && <NavItem to="/managers" icon={LuUserCog} label="Managers" />}
+          {hasPerm('attendance:update') && <NavItem to="/attendance" icon={LuCalendar} label="Attendance" />}
+          {isSiteManager && <NavItem to="/my-attendance" icon={LuCalendar} label="My Attendance" />}
+          {hasPerm('admin:view_all') && <NavItem to="/manager-attendance" icon={LuCalendar} label="Manager Attendance" />}
+          {hasPerm('schedule:edit') && <NavItem to="/duty-list" icon={LuClipboardList} label="Duty List" />}
+          {hasPerm('payslip:view_all') && <NavItem to="/payslips" icon={LuDollarSign} label="Payslips" />}
+        </NavSection>
+
+        {/* PROJECTS Section */}
+        {hasPerm('employee:view_all') && (
+          <NavSection title="PROJECTS" icon={LuFolderKanban} defaultOpen={false}>
+            <NavItem to="/projects" icon={LuFolderKanban} label="All Projects" />
+            <NavItem to="/site-management" icon={LuBuilding2} label="Sites" />
+            <NavItem to="/project-workflow" icon={LuGitBranch} label="Workflow" />
+          </NavSection>
+        )}
+
+        {/* FLEET Section */}
+        <NavSection title="FLEET" icon={LuTruck} defaultOpen={false}>
+          {hasPerm(null) && <NavItem to="/vehicles" icon={LuTruck} label="Vehicles" />}
+        </NavSection>
+
+        {/* FINANCE Section */}
+        {hasPerm('admin:view_all') && (
+          <NavSection title="FINANCE" icon={LuWallet} defaultOpen={false}>
+            <NavItem to="/finance" icon={LuChartBarBig} label="Finance Dashboard" />
+          </NavSection>
+        )}
+
+        {/* INVENTORY - Standalone */}
+        {hasPerm('employee:view_all') && (
+          <button
+            onClick={() => navigate('/inventory')}
+            className={`nav-item-standalone ${isActive('/inventory') ? 'active' : ''}`}
           >
-            {item.icon}
-            {item.name}
-          </NavLink>
-        ))}
-      </div>
-    </div>
+            <LuPackage size={20} />
+            <span>Inventory</span>
+          </button>
+        )}
+
+        {/* MESSAGES - Always visible */}
+        <button
+          onClick={() => navigate(messagesPath)}
+          className={`nav-item-standalone ${isActive(messagesPath) ? 'active' : ''}`}
+        >
+          <LuMessageSquare size={20} />
+          <span>Messages</span>
+        </button>
+
+        {/* SETTINGS Section */}
+        {hasPerm('admin:view_all') && (
+          <NavSection title="SETTINGS" icon={LuSettings} defaultOpen={false}>
+            <NavItem to="/admins" icon={LuShield} label="Admins" />
+            <NavItem to="/settings" icon={LuSettings} label="Company Settings" />
+          </NavSection>
+        )}
+      </nav>
+    </aside>
   );
 };
 

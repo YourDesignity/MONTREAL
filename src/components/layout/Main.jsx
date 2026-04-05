@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation, Outlet, Navigate } from "react-router-dom";
 import { Layout, Drawer, Affix } from "antd";
-import Sidenav from "./Sidenav";
+import Sidebar from "../Sidebar";
 import Header from "./Header";
 import Footer from "./Footer";
 import { useAuth } from "../../context/AuthContext";
@@ -67,7 +67,7 @@ function Main() {
               theme="light" 
               className="sider-primary ant-layout-sider-primary"
             >
-              <Sidenav color={sidenavColor} />
+              <Sidebar />
             </Sider>
           </Layout>
         </Drawer>
@@ -91,7 +91,7 @@ function Main() {
             overflowY: 'auto'
           }}
         >
-          <Sidenav color={sidenavColor} />
+          <Sidebar />
         </Sider>
 
         {/* MAIN CONTENT AREA */}
