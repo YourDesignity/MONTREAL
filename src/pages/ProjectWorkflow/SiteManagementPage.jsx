@@ -140,6 +140,12 @@ const SiteManagementPage = () => {
       key: 'actions',
       render: (_, record) => (
         <Space>
+          <Button
+            type="link"
+            onClick={() => navigate(`/project-workflow/sites/${record.uid}/details`)}
+          >
+            Details
+          </Button>
           <Tooltip title={record.assigned_manager_name ? 'Change Manager' : 'Assign Manager'}>
             <Button
               type="link"

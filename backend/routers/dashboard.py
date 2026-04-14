@@ -190,3 +190,125 @@ async def get_dashboard_summary():
         "expiring_contracts": expiring_soon,
         "workforce_gaps": workforce_gaps,
     }
+
+
+@router.get("/workflow-summary", dependencies=[Depends(get_current_active_user)])
+async def get_workflow_summary():
+    """
+    Returns aggregate statistics for the Workflow Overview dashboard.
+    Includes Projects → Contracts → Sites hierarchy data with workforce stats.
+    """
+    today = date.today()
+
+    all_projects = await Project.find().sort("+uid").to_list()
+    all_contracts = await Contract.find().sort("+uid").to_list()
+    all_sites = await Site.find().sort("+uid").to_list()
+
+    active_temp = await TemporaryAssignment.find(
+        TemporaryAssignment.status == "Active"
+    ).to_list()
+
+    total_temp_cost = sum((ta.total_cost or 0.0) for ta in active_temp)
+
+    # Contract expiry alerts
+    expiring_soon = []
+    for c in all_contracts:
+        if c.status == "Active" and c.end_date:
+            days_left = (c.end_date - today).days
+            if days_left <= 30:
+                expiring_soon.append({
+                    "contract_id": c.uid,
+                    "contract_code": c.contract_code,
+                    "contract_name": c.contract_name,
+                    "project_name": c.project_name,
+                    "end_date": c.end_date.isoformat(),
+                    "days_remaining": days_left,
+                    "alert_level": "danger" if days_left <= 7 else "warning",
+                })
+    expiring_soon.sort(key=lambda x: x["days_remaining"])
+
+    # Sites with workforce gaps
+    workforce_gaps = [
+        {
+            "site_id": s.uid,
+            "site_code": s.site_code,
+            "site_name": s.name,
+            "project_name": s.project_name,
+            "required_workers": s.required_workers,
+            "assigned_workers": s.assigned_workers,
+            "gap": s.required_workers - s.assigned_workers,
+        }
+        for s in all_sites
+        if s.status == "Active" and s.required_workers > 0 and s.assigned_workers < s.required_workers
+    ]
+
+    # Build hierarchy: project → contracts → sites
+    contracts_by_project: dict = {}
+    for c in all_contracts:
+        pid = c.project_id
+        if pid not in contracts_by_project:
+            contracts_by_project[pid] = []
+        contracts_by_project[pid].append(c)
+
+    sites_by_contract: dict = {}
+    for s in all_sites:
+        cid = s.contract_id
+        if cid not in sites_by_contract:
+            sites_by_contract[cid] = []
+        sites_by_contract[cid].append(s)
+
+    hierarchy = []
+    for p in all_projects:
+        p_contracts = contracts_by_project.get(p.uid, [])
+        p_contracts_data = []
+        for c in p_contracts:
+            c_sites = sites_by_contract.get(c.uid, [])
+            p_contracts_data.append({
+                "uid": c.uid,
+                "contract_code": c.contract_code,
+                "contract_name": c.contract_name,
+                "status": c.status,
+                "end_date": c.end_date.isoformat() if c.end_date else None,
+                "days_remaining": c.days_remaining,
+                "contract_value": c.contract_value,
+                "sites": [
+                    {
+                        "uid": s.uid,
+                        "site_code": s.site_code,
+                        "name": s.name,
+                        "location": s.location,
+                        "status": s.status,
+                        "assigned_workers": s.assigned_workers,
+                        "required_workers": s.required_workers,
+                        "assigned_manager_name": s.assigned_manager_name,
+                    }
+                    for s in c_sites
+                ],
+            })
+        hierarchy.append({
+            "uid": p.uid,
+            "project_code": p.project_code,
+            "project_name": p.project_name,
+            "client_name": p.client_name,
+            "status": p.status,
+            "contracts": p_contracts_data,
+        })
+
+    total_contract_value = sum(c.contract_value or 0 for c in all_contracts if c.status == "Active")
+
+    return {
+        "total_projects": len(all_projects),
+        "active_projects": sum(1 for p in all_projects if p.status == "Active"),
+        "completed_projects": sum(1 for p in all_projects if p.status == "Completed"),
+        "total_contracts": len(all_contracts),
+        "active_contracts": sum(1 for c in all_contracts if c.status == "Active"),
+        "expiring_contracts": len(expiring_soon),
+        "total_sites": len(all_sites),
+        "active_sites": sum(1 for s in all_sites if s.status == "Active"),
+        "total_active_temp_workers": len(active_temp),
+        "monthly_temp_cost": total_temp_cost,
+        "total_contract_value": total_contract_value,
+        "expiring_soon": expiring_soon,
+        "workforce_gaps": workforce_gaps,
+        "hierarchy": hierarchy,
+    }

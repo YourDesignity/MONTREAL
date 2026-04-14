@@ -523,3 +523,66 @@ async def remove_employee_from_site(
 
     logger.info(f"Employee removed from site {site_id}")
     return None
+
+
+@router.get("/{site_id}/activity")
+async def get_site_activity(
+    site_id: int,
+    limit: int = 20,
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Get recent activity log for a specific site."""
+    site = await Site.find_one(Site.uid == site_id)
+    if not site:
+        raise HTTPException(status_code=404, detail="Site not found")
+
+    if current_user.get("role") == "Site Manager":
+        me = await Admin.find_one(Admin.email == current_user.get("sub"))
+        if not me or site.assigned_manager_id != me.uid:
+            raise HTTPException(status_code=403, detail="Access denied")
+    elif current_user.get("role") not in ["SuperAdmin", "Admin"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    from backend.models import EmployeeAssignment, TemporaryAssignment
+
+    # Collect recent employee assignments
+    emp_assignments = await EmployeeAssignment.find(
+        EmployeeAssignment.site_id == site_id
+    ).sort("-uid").limit(limit).to_list()
+
+    # Collect recent temp assignments
+    temp_assignments = await TemporaryAssignment.find(
+        TemporaryAssignment.site_id == site_id
+    ).sort("-uid").limit(limit).to_list()
+
+    activities = []
+
+    for a in emp_assignments:
+        activities.append({
+            "type": "employee_assigned" if a.status == "Active" else "employee_unassigned",
+            "description": f"{a.employee_name} ({a.employee_designation}) assigned to this site",
+            "date": a.assigned_date.isoformat() if a.assigned_date else (a.created_at.isoformat() if a.created_at else None),
+            "status": a.status,
+            "employee_name": a.employee_name,
+            "employee_type": a.employee_type,
+        })
+
+    for t in temp_assignments:
+        activities.append({
+            "type": "temp_worker_assigned" if t.status == "Active" else "temp_worker_ended",
+            "description": f"Temporary worker {t.employee_name} assigned to this site",
+            "date": t.start_date.isoformat() if t.start_date else (t.created_at.isoformat() if t.created_at else None),
+            "status": t.status,
+            "employee_name": t.employee_name,
+            "employee_type": "Temporary",
+        })
+
+    # Sort by date descending
+    activities.sort(key=lambda x: x["date"] or "", reverse=True)
+
+    return {
+        "site_id": site_id,
+        "site_name": site.name,
+        "activities": activities[:limit],
+        "total": len(activities),
+    }

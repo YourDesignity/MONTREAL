@@ -116,6 +116,12 @@ const ContractManagementPage = () => {
         <Space>
           <Button
             type="link"
+            onClick={() => navigate(`/project-workflow/contracts/${record.uid}/details`)}
+          >
+            Details
+          </Button>
+          <Button
+            type="link"
             icon={<EnvironmentOutlined />}
             onClick={() => navigate(`/project-workflow/${projectId}/sites?contract=${record.uid}`)}
           >
