@@ -171,12 +171,6 @@ async def change_my_password(
     return {"message": "Password changed successfully"}
 
 
-_PHOTO_CONTENT_TYPE_EXT = {
-    "image/jpeg": "jpg",
-    "image/jpg": "jpg",
-    "image/png": "png",
-}
-
 ADMIN_PHOTO_DIR = os.path.join("backend", "uploads", "admin_photos")
 os.makedirs(ADMIN_PHOTO_DIR, exist_ok=True)
 
@@ -201,7 +195,7 @@ async def upload_my_photo(
     # Extension is determined by magic bytes, not user-provided content-type
     ext = "png" if is_png else "jpg"
     admin_id = current_user.get("id")
-    filename = f"admin_{int(admin_id)}.{ext}"
+    filename = f"admin_{admin_id}.{ext}"
     file_path = os.path.join(ADMIN_PHOTO_DIR, filename)
 
     with open(file_path, "wb") as f:
