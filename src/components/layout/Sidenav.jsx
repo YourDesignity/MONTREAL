@@ -13,6 +13,7 @@ import {
   ApartmentOutlined,
   BarChartOutlined,
   UsergroupAddOutlined,
+  ContactsOutlined,
 } from "@ant-design/icons";
 import { useAuth } from "../../context/AuthContext";
 
@@ -57,6 +58,7 @@ function Sidenav({ color }) {
       },
       { path: "/admins", name: "Admins", icon: <SafetyCertificateOutlined />, perm: 'admin:view_all' },
       { path: "/site-management", name: "Site Mgmt", icon: <GoldOutlined />, perm: 'admin:view_all' },
+      { path: "/my-profile", name: "My Profile", icon: <ContactsOutlined />, perm: null },
       { path: "/settings", name: "Settings", icon: <SettingOutlined />, perm: 'admin:view_all' },
     ];
 

@@ -1,7 +1,20 @@
 from typing import List, Optional, Dict, Any, Annotated
 from datetime import datetime, date, time
 from beanie import Document, Indexed
-from pydantic import Field, BaseModel
+from pydantic import Field, BaseModel, field_validator
+
+
+def _coerce_date_to_datetime(v):
+    """Convert datetime.date → datetime.datetime for BSON/MongoDB compatibility.
+
+    pymongo's BSON codec does not natively support bare ``datetime.date``
+    objects on all platforms (notably Windows).  This helper is used as a
+    ``mode='before'`` field validator in every Document that stores date
+    fields so that values are always stored as ``datetime.datetime``.
+    """
+    if isinstance(v, date) and not isinstance(v, datetime):
+        return datetime(v.year, v.month, v.day)
+    return v
 
 # =============================================================================
 # 1. UTILITIES & BASE MODEL
@@ -53,6 +66,8 @@ class Admin(Document, MemoryNode):
     permissions: List[str] = []     
     assigned_site_uids: List[int] = []
     has_manager_profile: bool = False
+    phone: Optional[str] = None
+    profile_photo: Optional[str] = None
     class Settings:
         name = "admins"
 
@@ -66,7 +81,7 @@ class Employee(Document, MemoryNode):
     employee_type: str = "Company"  # "Company" | "Outsourced"
 
     # ===== PERSONAL DETAILS =====
-    date_of_birth: Optional[date] = None
+    date_of_birth: Optional[datetime] = None
     nationality: Optional[str] = None
     permanent_address: Optional[str] = None
 
@@ -78,11 +93,11 @@ class Employee(Document, MemoryNode):
 
     # ===== IDENTITY DOCUMENTS =====
     civil_id_number: Optional[str] = None
-    civil_id_expiry: Optional[date] = None
+    civil_id_expiry: Optional[datetime] = None
     civil_id_document_path: Optional[str] = None  # PDF file path
 
     passport_number: Optional[str] = None
-    passport_expiry: Optional[date] = None
+    passport_expiry: Optional[datetime] = None
     passport_document_path: Optional[str] = None  # PDF file path
 
     visa_document_path: Optional[str] = None  # PDF file path
@@ -103,8 +118,8 @@ class Employee(Document, MemoryNode):
     default_hourly_rate: float = 0.0  # Used for Outsourced employees
 
     # ===== EMPLOYMENT DETAILS =====
-    date_of_joining: Optional[date] = None
-    contract_end_date: Optional[date] = None  # For Outsourced employees
+    date_of_joining: Optional[datetime] = None
+    contract_end_date: Optional[datetime] = None  # For Outsourced employees
 
     # ===== DEPRECATED FIELDS (kept for backward compatibility) =====
     passport_path: Optional[str] = None   # DEPRECATED - use passport_document_path
@@ -121,8 +136,8 @@ class Employee(Document, MemoryNode):
     current_site_name: Optional[str] = None
     current_manager_id: Optional[int] = None
     current_manager_name: Optional[str] = None
-    current_assignment_start: Optional[date] = None
-    current_assignment_end: Optional[date] = None
+    current_assignment_start: Optional[datetime] = None
+    current_assignment_end: Optional[datetime] = None
 
     # Assignment History (list of assignment UIDs)
     assignment_history_ids: List[int] = []
@@ -148,6 +163,16 @@ class Employee(Document, MemoryNode):
     # Metrics
     total_substitute_assignments: int = 0
     total_days_as_substitute: int = 0
+
+    @field_validator(
+        'date_of_birth', 'civil_id_expiry', 'passport_expiry',
+        'date_of_joining', 'contract_end_date',
+        'current_assignment_start', 'current_assignment_end',
+        mode='before'
+    )
+    @classmethod
+    def coerce_dates(cls, v):
+        return _coerce_date_to_datetime(v)
 
     class Settings:
         name = "employees"
@@ -182,8 +207,8 @@ class Site(Document, MemoryNode):
     assigned_workers: int = 0                 # How many currently assigned
     assigned_employee_ids: List[int] = []     # List of Employee.uid assigned to this site
     status: str = "Active"                    # Active | Completed | On Hold
-    start_date: Optional[date] = None         # When site work started
-    completion_date: Optional[date] = None    # When site work completed
+    start_date: Optional[datetime] = None         # When site work started
+    completion_date: Optional[datetime] = None    # When site work completed
 
     # ===== HEADCOUNT MANAGEMENT (NEW) =====
     active_substitute_uids: List[int] = []    # Outsourced/substitute employees currently at this site
@@ -202,6 +227,11 @@ class Site(Document, MemoryNode):
     def headcount_shortage(self) -> int:
         """How many employees the site is short."""
         return max(0, self.required_workers - self.current_headcount)
+
+    @field_validator('start_date', 'completion_date', mode='before')
+    @classmethod
+    def coerce_dates(cls, v):
+        return _coerce_date_to_datetime(v)
 
     class Settings:
         name = "sites"
@@ -537,8 +567,8 @@ class Contract(Document):
     project_name: Optional[str] = None  # Denormalized for quick access
 
     # Contract Period
-    start_date: date
-    end_date: date
+    start_date: datetime
+    end_date: datetime
 
     # Financial
     contract_value: float = 0.0    # Total contract value in KD
@@ -574,12 +604,18 @@ class Contract(Document):
             "end_date",
         ]
 
+    @field_validator('start_date', 'end_date', mode='before')
+    @classmethod
+    def coerce_dates(cls, v):
+        return _coerce_date_to_datetime(v)
+
     async def calculate_duration(self):
         """Calculate contract duration and days remaining."""
         if self.start_date and self.end_date:
             self.duration_days = (self.end_date - self.start_date).days
 
-            today = date.today()
+            # Compare at midnight for date-only semantics
+            today = datetime.combine(date.today(), time.min)
             if today < self.end_date:
                 self.days_remaining = (self.end_date - today).days
                 self.is_expiring_soon = self.days_remaining <= 30
@@ -619,9 +655,9 @@ class EmployeeAssignment(Document):
     manager_name: Optional[str] = None
 
     # Assignment Period
-    assigned_date: date            # When assignment was created
-    assignment_start: date         # When employee starts working (usually contract start)
-    assignment_end: Optional[date] = None  # When assignment ends (None = open-ended)
+    assigned_date: datetime            # When assignment was created
+    assignment_start: datetime         # When employee starts working (usually contract start)
+    assignment_end: Optional[datetime] = None  # When assignment ends (None = open-ended)
 
     # Status
     status: str = "Active"         # Active | Completed | Reassigned | Terminated
@@ -634,6 +670,11 @@ class EmployeeAssignment(Document):
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
     created_by_admin_id: Optional[int] = None
+
+    @field_validator('assigned_date', 'assignment_start', 'assignment_end', mode='before')
+    @classmethod
+    def coerce_dates(cls, v):
+        return _coerce_date_to_datetime(v)
 
     class Settings:
         name = "employee_assignments"
@@ -677,8 +718,8 @@ class TemporaryAssignment(Document):
     replacement_reason: Optional[str] = None       # "Sick Leave" | "Vacation" | "Emergency" | "Additional Coverage"
 
     # Period (can be just 1 day!)
-    start_date: date
-    end_date: date
+    start_date: datetime
+    end_date: datetime
     total_days: int = 1
 
     # Payment
@@ -693,6 +734,11 @@ class TemporaryAssignment(Document):
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
     created_by_admin_id: Optional[int] = None
+
+    @field_validator('start_date', 'end_date', mode='before')
+    @classmethod
+    def coerce_dates(cls, v):
+        return _coerce_date_to_datetime(v)
 
     class Settings:
         name = "temporary_assignments"
