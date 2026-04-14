@@ -258,7 +258,7 @@ function SitesTab({ managerId, initialSiteIds }) {
   const handleSave = async () => {
     setSubmitting(true);
     try {
-      await updateManagerSites(managerId, { site_ids: selectedSites });
+      await updateManagerSites(managerId, { site_uids: selectedSites });
       message.success('Site assignments updated');
     } catch (err) {
       message.error('Failed to update sites: ' + (err?.message ?? 'Unknown error'));
