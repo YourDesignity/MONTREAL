@@ -9,7 +9,7 @@ import Main from './components/layout/Main';
 
 // --- Pages ---
 import LoginPage from './pages/LoginPage';
-import DashboardPage from './components/DashboardPage';
+import DashboardPage from './pages/DashboardPage';
 import EmployeesPage from './pages/EmployeesPage';
 import EmployeeProfilePage from './pages/EmployeeProfilePage';
 import AttendancePage from './pages/AttendancePage';
