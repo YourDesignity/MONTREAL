@@ -62,7 +62,7 @@ function CreateManagerPage() {
         iban: values.iban,
         civil_id: values.civil_id,
         passport_number: values.passport_number,
-        site_ids: values.site_ids ?? [],
+        assigned_site_uids: values.assigned_site_uids ?? [],
       };
 
       await createManagerProfile(payload);
@@ -279,7 +279,7 @@ function CreateManagerPage() {
           <Title level={5} style={{ marginBottom: 20 }}>Site Assignments</Title>
           <Row gutter={[24, 0]}>
             <Col xs={24}>
-              <Form.Item name="site_ids" label="Assigned Sites">
+              <Form.Item name="assigned_site_uids" label="Assigned Sites">
                 <Select
                   mode="multiple"
                   placeholder="Select one or more sites"
