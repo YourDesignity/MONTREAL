@@ -7,7 +7,7 @@ import {
   SearchOutlined, BellFilled, UserOutlined, LogoutOutlined, 
   ProfileOutlined
 } from "@ant-design/icons";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
 const { Text, Title } = Typography;
@@ -15,9 +15,12 @@ const { useToken } = theme;
 
 const initialNotifications = [];
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+
 function Header({ name, subName }) {
   const { user, logout } = useAuth();
   const { token } = useToken(); 
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState(initialNotifications);
   const [openNotif, setOpenNotif] = useState(false);
 
@@ -52,22 +55,24 @@ function Header({ name, subName }) {
     </div>
   );
 
+  const photoSrc = user?.profile_photo ? `${API_BASE_URL}${user.profile_photo}` : undefined;
+
   const menuItems = [
     {
       key: 'header',
       label: (
         <div style={styles.headerCard}>
           <Badge dot status="success" offset={[-6, 58]}>
-            <Avatar size={64} style={styles.gradientAvatar} icon={<UserOutlined />} />
+            <Avatar size={64} style={styles.gradientAvatar} src={photoSrc} icon={<UserOutlined />} />
           </Badge>
-          <Title level={5} style={{ margin: '12px 0 2px 0' }}>{user ? user.sub.split('@')[0] : "Guest"}</Title>
+          <Title level={5} style={{ margin: '12px 0 2px 0' }}>{user?.full_name || user?.sub?.split('@')[0] || "Guest"}</Title>
           <Text type="secondary" style={{ fontSize: '12px', marginBottom: '12px' }}>{user?.sub}</Text>
           <Tag color="blue">{user?.role || "ADMIN"}</Tag>
         </div>
       ),
     },
     { type: 'divider' },
-    { key: 'profile', icon: <ProfileOutlined />, label: 'My Profile' },
+    { key: 'profile', icon: <ProfileOutlined />, label: 'My Profile', onClick: () => navigate('/my-profile') },
     { type: 'divider' },
     { key: 'logout', danger: true, icon: <LogoutOutlined />, label: 'Logout', onClick: logout },
   ];
@@ -81,9 +86,9 @@ function Header({ name, subName }) {
         {/* FIX: popupRender */}
         <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight" popupRender={(menu) => <div style={styles.dropdownContent}>{menu}</div>}>
           <div className="admin-profile-trigger" style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', gap: '12px' }}>
-            <Badge dot offset={[-5, 35]} status="success"><Avatar size={40} style={styles.gradientAvatar} icon={<UserOutlined />} /></Badge>
+            <Badge dot offset={[-5, 35]} status="success"><Avatar size={40} style={styles.gradientAvatar} src={photoSrc} icon={<UserOutlined />} /></Badge>
             <div style={{ display: 'flex', flexDirection: 'column', lineHeight: '1.2' }}>
-              <span style={{ fontWeight: 600 }}>{user ? user.sub.split('@')[0] : "Guest"}</span>
+              <span style={{ fontWeight: 600 }}>{user?.full_name || user?.sub?.split('@')[0] || "Guest"}</span>
               <span style={{ fontSize: '10px', color: '#8c8c8c' }}>{user?.role || "Admin"}</span>
             </div>
           </div>

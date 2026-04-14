@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import {
   Modal, Tabs, Form, Input, Select, Switch, Button,
   Row, Col, Divider, message, Tag, Space, Typography,
+  Avatar, Upload,
 } from 'antd';
 import {
   UserOutlined, MailOutlined, LockOutlined, PhoneOutlined,
-  IdcardOutlined, SafetyCertificateOutlined,
+  IdcardOutlined, SafetyCertificateOutlined, CameraOutlined,
 } from '@ant-design/icons';
-import { updateAdminProfile, updateAdminPassword } from '../../services/apiService';
+import { updateAdminProfile, updateAdminPassword, uploadAdminPhoto } from '../../services/apiService';
 
 const { Option } = Select;
 const { Text, Title } = Typography;
@@ -40,12 +41,34 @@ const getRoleId = (roleNameOrObj) => {
   return entry ? parseInt(entry[0]) : 2;
 };
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+
 // ---------------------------------------------------------------------------
 // Profile Tab
 // ---------------------------------------------------------------------------
 function ProfileTab({ adminId, initialData, onSaved }) {
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState(initialData?.profile_photo || null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+  useEffect(() => {
+    setPhotoUrl(initialData?.profile_photo || null);
+  }, [initialData]);
+
+  const handlePhotoUpload = async ({ file }) => {
+    setUploadingPhoto(true);
+    try {
+      const result = await uploadAdminPhoto(adminId, file);
+      setPhotoUrl(result.photo_url);
+      message.success('Profile photo updated!');
+      if (onSaved) onSaved();
+    } catch (err) {
+      message.error(err?.message || 'Failed to upload photo');
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
 
   useEffect(() => {
     if (initialData) {
@@ -82,6 +105,29 @@ function ProfileTab({ adminId, initialData, onSaved }) {
 
   return (
     <Form form={form} layout="vertical" style={{ marginTop: 8 }}>
+      <div style={{ textAlign: 'center', marginBottom: 24 }}>
+        <Avatar
+          size={100}
+          src={photoUrl ? `${API_BASE_URL}${photoUrl}` : undefined}
+          icon={<UserOutlined />}
+          style={{ marginBottom: 12, border: '3px solid #f0f0f0' }}
+        />
+        <div>
+          <Upload
+            showUploadList={false}
+            customRequest={handlePhotoUpload}
+            accept="image/jpeg,image/png"
+            disabled={uploadingPhoto}
+          >
+            <Button icon={<CameraOutlined />} loading={uploadingPhoto}>
+              Change Photo
+            </Button>
+          </Upload>
+          <div style={{ marginTop: 8 }}>
+            <Text type="secondary" style={{ fontSize: 12 }}>JPG, PNG • Max 5MB</Text>
+          </div>
+        </div>
+      </div>
       <Row gutter={[16, 0]}>
         <Col xs={24} md={12}>
           <Form.Item

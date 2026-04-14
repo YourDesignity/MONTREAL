@@ -211,6 +211,44 @@ async def upload_my_photo(
     return {"message": "Photo uploaded successfully", "photo_url": admin.profile_photo}
 
 
+# ── Upload photo for a specific admin by ID ────────────────────────────────────
+
+@router.post("/{admin_id}/photo", dependencies=[Depends(require_permission("admin:edit"))])
+async def upload_admin_photo(
+    admin_id: int,
+    photo: UploadFile = File(...),
+    current_user: dict = Depends(get_current_active_user),
+):
+    """Upload a profile photo for a specific admin. Requires the 'admin:edit' permission."""
+    content = await photo.read()
+
+    if len(content) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File size must be less than 5 MB")
+
+    is_jpeg = len(content) >= 3 and content[:3] == b"\xff\xd8\xff"
+    is_png = len(content) >= 8 and content[:8] == b"\x89PNG\r\n\x1a\n"
+    if not (is_jpeg or is_png):
+        raise HTTPException(status_code=400, detail="Only JPEG and PNG images are allowed")
+
+    ext = "png" if is_png else "jpg"
+    # admin_id is validated as int by FastAPI; use int() to make the path safe
+    safe_admin_id = int(admin_id)
+    filename = f"admin_{safe_admin_id}.{ext}"
+    file_path = os.path.join(ADMIN_PHOTO_DIR, filename)
+
+    with open(file_path, "wb") as f:
+        f.write(content)
+
+    admin = await Admin.find_one(Admin.uid == safe_admin_id)
+    if not admin:
+        raise HTTPException(status_code=404, detail="Admin not found")
+
+    admin.profile_photo = f"/uploads/admin_photos/{filename}"
+    await admin.save()
+
+    return {"message": "Photo uploaded successfully", "photo_url": admin.profile_photo}
+
+
 # ── Single admin by ID ─────────────────────────────────────────────────────────
 
 @router.get("/{admin_id}", response_model=schemas.AdminPublic, dependencies=[Depends(require_permission("admin:view_all"))])
