@@ -30,7 +30,9 @@ def get_mongo_connection_url():
         db_host = os.getenv("DB_HOST", "localhost")
         db_port = os.getenv("DB_PORT", "27017")
         auth_db = os.getenv("AUTH_DB", "admin")
-        url = f"mongodb://{quote_plus(db_user)}:{quote_plus(db_pass)}@{db_host}:{db_port}/?authSource={auth_db}"
+        # Add directConnection=true to bypass replica set hostname resolution issues on Linux/Docker
+        # This prevents "AutoReconnect: container_id:27017 [Errno -3] Temporary failure in name resolution"
+        url = f"mongodb://{quote_plus(db_user)}:{quote_plus(db_pass)}@{db_host}:{db_port}/?authSource={auth_db}&directConnection=true"
         print("🔐 DB connection mode: AUTH ENABLED (Linux/Production)")
         return url
     else:
