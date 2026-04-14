@@ -614,7 +614,8 @@ class Contract(Document):
         if self.start_date and self.end_date:
             self.duration_days = (self.end_date - self.start_date).days
 
-            today = datetime.now()
+            # Compare at midnight for date-only semantics
+            today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
             if today < self.end_date:
                 self.days_remaining = (self.end_date - today).days
                 self.is_expiring_soon = self.days_remaining <= 30

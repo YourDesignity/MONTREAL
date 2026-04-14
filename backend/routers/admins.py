@@ -175,8 +175,6 @@ _PHOTO_CONTENT_TYPE_EXT = {
     "image/jpeg": "jpg",
     "image/jpg": "jpg",
     "image/png": "png",
-    "image/gif": "gif",
-    "image/webp": "webp",
 }
 
 ADMIN_PHOTO_DIR = os.path.join("backend", "uploads", "admin_photos")
@@ -194,15 +192,16 @@ async def upload_my_photo(
     if len(content) > 5 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="File size must be less than 5 MB")
 
-    # Validate via magic bytes
+    # Validate via magic bytes and derive extension from actual content (not user-provided)
     is_jpeg = len(content) >= 3 and content[:3] == b"\xff\xd8\xff"
     is_png = len(content) >= 8 and content[:8] == b"\x89PNG\r\n\x1a\n"
     if not (is_jpeg or is_png):
         raise HTTPException(status_code=400, detail="Only JPEG and PNG images are allowed")
 
-    ext = _PHOTO_CONTENT_TYPE_EXT.get(photo.content_type, "jpg")
+    # Extension is determined by magic bytes, not user-provided content-type
+    ext = "png" if is_png else "jpg"
     admin_id = current_user.get("id")
-    filename = f"admin_{admin_id}.{ext}"
+    filename = f"admin_{int(admin_id)}.{ext}"
     file_path = os.path.join(ADMIN_PHOTO_DIR, filename)
 
     with open(file_path, "wb") as f:
