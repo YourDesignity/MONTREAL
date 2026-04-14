@@ -1,5 +1,4 @@
 import os
-import platform
 from pathlib import Path
 from urllib.parse import quote_plus
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -22,18 +21,22 @@ env_path = Path("./backend/.env")
 load_dotenv(dotenv_path=env_path)
 
 DB_NAME = os.getenv("DB_NAME", "payroll_db")
-CURRENT_OS = platform.system()
 
 def get_mongo_connection_url():
-    if CURRENT_OS == "Windows":
-        return os.getenv("MONGO_URL", "mongodb://localhost:27017")
-    else:
+    auth_enabled = os.getenv("DB_AUTH_ENABLED", "false").strip().lower() == "true"
+    if auth_enabled:
         db_user = os.getenv("DB_USER", "destiny_mind")
         db_pass = os.getenv("DB_PASS", "iamironman")
         db_host = os.getenv("DB_HOST", "localhost")
         db_port = os.getenv("DB_PORT", "27017")
-        auth_db = os.getenv("AUTH_SOURCE", "destiny-neural-memory")
-        return f"mongodb://{quote_plus(db_user)}:{quote_plus(db_pass)}@{db_host}:{db_port}/?authSource={auth_db}"
+        auth_db = os.getenv("AUTH_DB", "admin")
+        url = f"mongodb://{quote_plus(db_user)}:{quote_plus(db_pass)}@{db_host}:{db_port}/?authSource={auth_db}"
+        print("🔐 DB connection mode: AUTH ENABLED (Linux/Production)")
+        return url
+    else:
+        url = os.getenv("MONGO_URL", "mongodb://localhost:27017")
+        print("🪟 DB connection mode: NO AUTH (Windows/Local Dev)")
+        return url
 
 MONGO_URL = get_mongo_connection_url()
 
