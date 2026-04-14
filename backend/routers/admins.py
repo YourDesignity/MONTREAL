@@ -55,6 +55,7 @@ async def get_all_admins():
                 "designation": admin.designation,
                 "is_active": admin.is_active,
                 "created_at": admin.created_at,
+                "profile_photo": admin.profile_photo,
                 "role": {
                     "id": role_id,
                     "name": admin.role,

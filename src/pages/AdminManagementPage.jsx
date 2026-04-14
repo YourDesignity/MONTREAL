@@ -14,6 +14,7 @@ import { useAuth } from '../context/AuthContext';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
 
 function AdminManagementPage() {
   const { user } = useAuth();
@@ -127,6 +128,7 @@ function AdminManagementPage() {
           <Avatar 
             shape="square" 
             size={40} 
+            src={record.profile_photo ? `${API_BASE_URL}${record.profile_photo}` : undefined}
             icon={<UserOutlined />} 
             style={{ backgroundColor: '#1890ff', marginRight: 12 }} 
           />
