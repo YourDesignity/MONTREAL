@@ -10,11 +10,13 @@ import {
 
 import { getAdmins, createAdmin, deleteAdmin } from '../services/apiService';
 import EditAdminModal from '../components/Admin/EditAdminModal';
+import { useAuth } from '../context/AuthContext';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 
 function AdminManagementPage() {
+  const { user } = useAuth();
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -24,16 +26,20 @@ function AdminManagementPage() {
   
   const [form] = Form.useForm();
 
-  // --- 1. Fetch Admins & Hide SuperAdmin ---
+  // --- 1. Fetch Admins with Role-Based Filtering ---
   const fetchAdmins = async () => {
     setLoading(true);
     try {
       const data = await getAdmins();
       
-      // LOGIC CHANGE: Filter out the "SuperAdmin" so they are invisible
-      // We check if the role name is 'SuperAdmin' (case-insensitive just to be safe)
-      const visibleAdmins = Array.isArray(data) 
-        ? data.filter(admin => admin.role?.name?.toLowerCase() !== 'superadmin') 
+      // Role-based filtering: SuperAdmin sees everyone, Regular Admin hides SuperAdmins
+      const visibleAdmins = Array.isArray(data)
+        ? data.filter(admin => {
+            if (user?.role === 'SuperAdmin') {
+              return true;
+            }
+            return admin.role?.name?.toLowerCase() !== 'superadmin';
+          })
         : [];
 
       setAdmins(visibleAdmins);
@@ -78,6 +84,11 @@ function AdminManagementPage() {
 
   // --- 3. Edit Admin ---
   const handleEditAdmin = (record) => {
+    // Security check: Regular Admins cannot edit SuperAdmins
+    if (user?.role !== 'SuperAdmin' && record.role?.name?.toLowerCase() === 'superadmin') {
+      message.error('You do not have permission to edit SuperAdmin accounts');
+      return;
+    }
     setEditAdmin(record);
     setIsEditModalOpen(true);
   };
@@ -90,6 +101,11 @@ function AdminManagementPage() {
 
   // --- 4. Delete Admin ---
   const handleDeleteAdmin = async (adminId) => {
+    // Safety check: Cannot delete yourself
+    if (adminId === user?.id) {
+      message.error('You cannot delete your own account!');
+      return;
+    }
     try {
       await deleteAdmin(adminId);
       message.success('Admin deleted successfully');
@@ -137,11 +153,13 @@ function AdminManagementPage() {
       key: 'role',
       render: (role) => {
         const roleName = role ? role.name : 'Unknown';
-        // Logic for colors (SuperAdmin shouldn't appear, but keeping logic just in case)
         let color = 'green';
         let icon = <UserOutlined />;
 
-        if (roleName === 'Site Manager') {
+        if (roleName === 'SuperAdmin') {
+            color = 'red';
+            icon = <SafetyCertificateOutlined />;
+        } else if (roleName === 'Site Manager') {
             color = 'cyan';
             icon = <IdcardOutlined />;
         }

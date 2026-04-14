@@ -293,13 +293,21 @@ async def create_admin(admin_data: schemas.AdminCreate, current_user: dict = Dep
 # 5. UPDATE ADMIN
 # =============================================================================
 
-@router.put("/{admin_id}", dependencies=[Depends(require_permission("admin:edit"))])
-async def update_admin(admin_id: int, admin_update: schemas.AdminUpdate):
+@router.put("/{admin_id}")
+async def update_admin(admin_id: int, admin_update: schemas.AdminUpdate, current_user: dict = Depends(require_permission("admin:edit"))):
     logger.info(f"ENDPOINT START: PUT /admins/{admin_id}")
 
     admin = await Admin.find_one(Admin.uid == admin_id)
     if not admin:
         raise HTTPException(status_code=404, detail="Admin not found")
+
+    # Security check: Only SuperAdmin can edit SuperAdmin accounts
+    if admin.role and admin.role.lower() == "superadmin":
+        if current_user.get("role") != "SuperAdmin":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only SuperAdmins can edit SuperAdmin accounts"
+            )
 
     # Standard updates
     if admin_update.full_name: admin.full_name = admin_update.full_name
@@ -345,13 +353,20 @@ async def update_admin_password(admin_id: int, password_data: schemas.AdminPassw
 # 7. DELETE ADMIN
 # =============================================================================
 
-@router.delete("/{admin_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_permission("admin:delete"))])
-async def delete_admin(admin_id: int):
+@router.delete("/{admin_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_admin(admin_id: int, current_user: dict = Depends(require_permission("admin:delete"))):
     logger.warning(f"ENDPOINT START: DELETE /admins/{admin_id}")
 
     admin = await Admin.find_one(Admin.uid == admin_id)
     if not admin:
         raise HTTPException(status_code=404, detail="Admin not found")
+
+    # Safety check: Cannot delete yourself
+    if admin_id == current_user.get("id"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You cannot delete your own account"
+        )
         
     # AUDIT SNAPSHOT
     audit_dump = admin.model_dump(mode='json', exclude={'hashed_password'})
