@@ -2,7 +2,7 @@
 
 import os
 import psutil
-from datetime import date
+from datetime import datetime
 from fastapi import APIRouter, Depends
 from backend.security import get_current_active_user
 from backend.models import Employee, Admin, Site, Attendance, Schedule, Project, Contract, TemporaryAssignment
@@ -84,9 +84,7 @@ async def get_dashboard_summary():
     Returns a comprehensive dashboard summary for the Phase 6 overview page.
     Includes project stats, workforce counts, contract alerts, and workforce gaps.
     """
-    today = date.today()
-
-    # --- Core counts ---
+    today = datetime.now()
     total_employees = await Employee.find(Employee.status == "Active").count()
     available_employees = await Employee.find(
         Employee.status == "Active",
@@ -198,9 +196,9 @@ async def get_workflow_summary():
     Returns aggregate statistics for the Workflow Overview dashboard.
     Includes Projects → Contracts → Sites hierarchy data with workforce stats.
     """
-    today = date.today()
+    today = datetime.now()
 
-    all_projects = await Project.find().sort("+uid").to_list()
+    all_projects= await Project.find().sort("+uid").to_list()
     all_contracts = await Contract.find().sort("+uid").to_list()
     all_sites = await Site.find().sort("+uid").to_list()
 
