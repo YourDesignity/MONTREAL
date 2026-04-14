@@ -2,14 +2,14 @@
 
 import logging
 import json
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
-from beanie import PydanticObjectId
+import os
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 
 # --- Imports ---
 from backend.models import Admin
 from backend import schemas
-from backend.security import get_current_active_user, get_password_hash, require_permission
+from backend.security import get_current_active_user, get_password_hash, verify_password, require_permission
 from backend.database import get_next_uid
 from backend.utils.logger import setup_logger 
 
@@ -107,6 +107,118 @@ async def get_all_managers(current_user: dict = Depends(get_current_active_user)
 # =============================================================================
 # 3. READ SINGLE ADMIN
 # =============================================================================
+
+# ── Self-service /me endpoints ────────────────────────────────────────────────
+# IMPORTANT: these static routes MUST appear before /{admin_id} so FastAPI
+# does not treat the literal string "me" as an integer admin_id.
+# =============================================================================
+
+@router.get("/me")
+async def get_my_profile(current_user: dict = Depends(get_current_active_user)):
+    """Return the profile of the currently authenticated admin."""
+    admin = await Admin.find_one(Admin.uid == current_user.get("id"))
+    if not admin:
+        raise HTTPException(status_code=404, detail="Profile not found")
+
+    return {
+        "id": admin.uid,
+        "email": admin.email,
+        "full_name": admin.full_name,
+        "designation": admin.designation,
+        "role": admin.role,
+        "phone": admin.phone,
+        "profile_photo": admin.profile_photo,
+        "created_at": admin.created_at.isoformat() if admin.created_at else None,
+    }
+
+
+@router.put("/me")
+async def update_my_profile(
+    payload: schemas.AdminSelfUpdateRequest,
+    current_user: dict = Depends(get_current_active_user),
+):
+    """Allow the authenticated admin to update their own profile fields."""
+    admin = await Admin.find_one(Admin.uid == current_user.get("id"))
+    if not admin:
+        raise HTTPException(status_code=404, detail="Profile not found")
+
+    if payload.full_name is not None:
+        admin.full_name = payload.full_name
+    if payload.designation is not None:
+        admin.designation = payload.designation
+    if payload.phone is not None:
+        admin.phone = payload.phone
+
+    await admin.save()
+    return {"message": "Profile updated successfully"}
+
+
+@router.put("/me/password")
+async def change_my_password(
+    payload: schemas.ChangePasswordRequest,
+    current_user: dict = Depends(get_current_active_user),
+):
+    """Allow the authenticated admin to change their own password."""
+    admin = await Admin.find_one(Admin.uid == current_user.get("id"))
+    if not admin:
+        raise HTTPException(status_code=404, detail="Profile not found")
+
+    if not verify_password(payload.current_password, admin.hashed_password):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    admin.hashed_password = get_password_hash(payload.new_password)
+    await admin.save()
+    return {"message": "Password changed successfully"}
+
+
+_PHOTO_CONTENT_TYPE_EXT = {
+    "image/jpeg": "jpg",
+    "image/jpg": "jpg",
+    "image/png": "png",
+    "image/gif": "gif",
+    "image/webp": "webp",
+}
+
+ADMIN_PHOTO_DIR = os.path.join("backend", "uploads", "admin_photos")
+os.makedirs(ADMIN_PHOTO_DIR, exist_ok=True)
+
+
+@router.post("/me/photo")
+async def upload_my_photo(
+    photo: UploadFile = File(...),
+    current_user: dict = Depends(get_current_active_user),
+):
+    """Upload a profile photo for the authenticated admin."""
+    content = await photo.read()
+
+    if len(content) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File size must be less than 5 MB")
+
+    # Validate via magic bytes
+    is_jpeg = len(content) >= 3 and content[:3] == b"\xff\xd8\xff"
+    is_png = len(content) >= 8 and content[:8] == b"\x89PNG\r\n\x1a\n"
+    if not (is_jpeg or is_png):
+        raise HTTPException(status_code=400, detail="Only JPEG and PNG images are allowed")
+
+    ext = _PHOTO_CONTENT_TYPE_EXT.get(photo.content_type, "jpg")
+    admin_id = current_user.get("id")
+    filename = f"admin_{admin_id}.{ext}"
+    file_path = os.path.join(ADMIN_PHOTO_DIR, filename)
+
+    with open(file_path, "wb") as f:
+        f.write(content)
+
+    admin = await Admin.find_one(Admin.uid == admin_id)
+    if not admin:
+        raise HTTPException(status_code=404, detail="Profile not found")
+
+    admin.profile_photo = f"/uploads/admin_photos/{filename}"
+    await admin.save()
+
+    return {"message": "Photo uploaded successfully", "photo_url": admin.profile_photo}
+
+
+# ── Single admin by ID ─────────────────────────────────────────────────────────
 
 @router.get("/{admin_id}", response_model=schemas.AdminPublic, dependencies=[Depends(require_permission("admin:view_all"))])
 async def get_admin_by_id(admin_id: int):

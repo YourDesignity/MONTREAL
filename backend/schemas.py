@@ -175,6 +175,15 @@ class AdminPublic(BaseModel):
     role: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
+class AdminSelfUpdateRequest(BaseModel):
+    full_name: Optional[str] = None
+    designation: Optional[str] = None
+    phone: Optional[str] = None
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
 # =============================================================================
 # 4. SITE SCHEMAS
 # =============================================================================

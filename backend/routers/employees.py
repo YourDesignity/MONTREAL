@@ -282,13 +282,14 @@ async def create_employee(
             visa_path = os.path.join(UPLOAD_DIRECTORY, "visas", f"visa_{timestamp}_{visa_file.filename}")
             save_upload_file(visa_file, visa_path)
 
-        # Parse date fields
+        # Parse date fields (return datetime for BSON/MongoDB compatibility)
         def parse_date(val):
             if not val:
                 return None
             try:
-                from datetime import date as date_type
-                return date_type.fromisoformat(val)
+                from datetime import date as date_type, datetime as datetime_type
+                d = date_type.fromisoformat(val)
+                return datetime_type(d.year, d.month, d.day)
             except (ValueError, TypeError):
                 return None
 

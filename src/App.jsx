@@ -52,6 +52,7 @@ import WorkflowOverview from './pages/ProjectWorkflow/WorkflowOverview';
 import Dashboard from './pages/Dashboard';
 import WorkforceDashboard from './pages/WorkforceDashboard';
 import ProjectAnalytics from './pages/ProjectAnalytics';
+import MyProfile from './pages/MyProfile';
 
 // --- Styles ---
 import "antd/dist/reset.css"; 
@@ -135,6 +136,7 @@ const App = () => {
             <Route path="messages" element={<MessagePage />} />
             <Route path="manager-messages" element={<ManagerMessagesPage />} />
             <Route path="settings" element={<CompanySettingsPage />} />
+            <Route path="my-profile" element={<MyProfile />} />
           </Route>
 
           {/* Redirects */}
