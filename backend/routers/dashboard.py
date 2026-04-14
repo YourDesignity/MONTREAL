@@ -322,6 +322,10 @@ async def get_profit_loss_summary():
     - Cost breakdown (employee vs external)
     - At-risk contracts
     """
+    # Business rule thresholds
+    AT_RISK_MARGIN_THRESHOLD = 10.0   # Below 10% margin = at-risk
+    DAYS_PER_MONTH = 30.44            # Average days per month for duration calculation
+
     contracts = await Contract.find(Contract.status == "Active").to_list()
 
     contract_analytics = []
@@ -333,10 +337,10 @@ async def get_profit_loss_summary():
         revenue = contract.contract_value or 0.0
         total_revenue += revenue
 
-        # Calculate duration in months
+        # Calculate duration in months using average days per month
         if contract.start_date and contract.end_date:
             duration_days = (contract.end_date - contract.start_date).days
-            duration_months = max(1.0, duration_days / 30.0)
+            duration_months = max(1.0, duration_days / DAYS_PER_MONTH)
         else:
             duration_months = 1.0
 
@@ -371,7 +375,7 @@ async def get_profit_loss_summary():
             temp_workers = []
 
         external_cost = sum(
-            (tw.daily_rate or 0.0) * max(tw.total_days or 1, 1)
+            (tw.daily_rate or 0.0) * (tw.total_days or 1)
             for tw in temp_workers
         )
 
@@ -382,11 +386,11 @@ async def get_profit_loss_summary():
         profit = revenue - costs
         margin = (profit / revenue * 100.0) if revenue > 0 else 0.0
 
-        # Status determination
+        # Status determination based on profit margin
         if margin < 0:
             status = "loss"
             status_color = "red"
-        elif margin < 10:
+        elif margin < AT_RISK_MARGIN_THRESHOLD:
             status = "at-risk"
             status_color = "orange"
         else:
@@ -434,9 +438,15 @@ async def get_profit_loss_summary():
 
     # Monthly trend (last 6 months) – distributes totals evenly as a baseline estimate
     monthly_trend = []
+    today = datetime.now()
     for i in range(6, 0, -1):
-        month_date = datetime.now() - timedelta(days=30 * i)
-        month_name = month_date.strftime("%b")
+        # Calculate the first day of each of the past 6 months
+        year = today.year
+        month = today.month - i
+        while month <= 0:
+            month += 12
+            year -= 1
+        month_name = datetime(year, month, 1).strftime("%b")
         monthly_trend.append({
             "month": month_name,
             "revenue": round(total_revenue / 6.0, 2),

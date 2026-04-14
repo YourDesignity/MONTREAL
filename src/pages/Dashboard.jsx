@@ -19,6 +19,14 @@ const { Title, Text } = Typography;
 
 const PALETTE = ['#52c41a', '#1890ff', '#fa8c16', '#ff4d4f', '#722ed1', '#13c2c2'];
 
+// Threshold below which a contract bar is considered "low profit" (30% of maximum)
+const LOW_PROFIT_THRESHOLD = 0.3;
+
+// Chart layout constants
+const CHART_HEIGHT = 180;
+const CHART_PADDING_TOP = 10;
+const CHART_PADDING_BOTTOM = 20;
+
 /** Vertical bar chart */
 const MiniBarChart = ({ data, valueKey, nameKey, colors }) => {
   if (!data || data.length === 0) return <Text type="secondary">No data</Text>;
@@ -65,7 +73,7 @@ const HorizontalBarChart = ({ data, valueKey, nameKey }) => {
       {data.slice(0, 6).map((item, i) => {
         const val = item[valueKey] || 0;
         const pct = Math.round((Math.abs(val) / maxVal) * 100);
-        const color = val < 0 ? '#ff4d4f' : val < maxVal * 0.3 ? '#fa8c16' : '#52c41a';
+        const color = val < 0 ? '#ff4d4f' : val < maxVal * LOW_PROFIT_THRESHOLD ? '#fa8c16' : '#52c41a';
         return (
           <div key={i}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
@@ -101,15 +109,17 @@ const MultiLineChart = ({ data, series }) => {
   const maxVal = Math.max(...allVals, 1);
   const minVal = Math.min(...allVals, 0);
   const range = maxVal - minVal || 1;
-  const chartH = 180;
 
-  const getY = (val) => chartH - Math.round(((val - minVal) / range) * (chartH - 20)) - 10;
+  const getY = (val) =>
+    CHART_HEIGHT -
+    Math.round(((val - minVal) / range) * (CHART_HEIGHT - CHART_PADDING_TOP - CHART_PADDING_BOTTOM)) -
+    CHART_PADDING_BOTTOM;
 
   const width = 100 / (data.length - 1 || 1);
 
   return (
-    <div style={{ position: 'relative', height: chartH + 30, overflow: 'hidden' }}>
-      <svg width="100%" height={chartH} viewBox={`0 0 400 ${chartH}`} preserveAspectRatio="none">
+    <div style={{ position: 'relative', height: CHART_HEIGHT + 30, overflow: 'hidden' }}>
+      <svg width="100%" height={CHART_HEIGHT} viewBox={`0 0 400 ${CHART_HEIGHT}`} preserveAspectRatio="none">
         {series.map((s) => {
           const points = data
             .map((d, i) => `${i * (400 / (data.length - 1 || 1))},${getY(d[s.key] || 0)}`)
