@@ -136,6 +136,12 @@ const ProjectDashboard = () => {
           </Button>
           <Button
             type="link"
+            onClick={() => navigate(`/project-workflow/${record.uid}/details`)}
+          >
+            Full Details
+          </Button>
+          <Button
+            type="link"
             onClick={() => navigate(`/project-workflow/${record.uid}/contracts`)}
           >
             Manage Contracts

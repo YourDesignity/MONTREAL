@@ -174,6 +174,57 @@ async def update_contract(
     return contract.model_dump(mode='json')
 
 
+@router.get("/{contract_id}/workforce-summary")
+async def get_contract_workforce_summary(
+    contract_id: int,
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Get workforce and financial summary for a specific contract."""
+    if current_user.get("role") not in ["SuperAdmin", "Admin"]:
+        raise HTTPException(status_code=403, detail="Only Admins can view contract summaries")
+
+    contract = await Contract.find_one(Contract.uid == contract_id)
+    if not contract:
+        raise HTTPException(status_code=404, detail="Contract not found")
+
+    await contract.calculate_duration()
+
+    project = await Project.find_one(Project.uid == contract.project_id) if contract.project_id else None
+    sites = await Site.find(Site.contract_id == contract_id).to_list()
+
+    from backend.models import EmployeeAssignment, TemporaryAssignment
+
+    company_count = await EmployeeAssignment.find(
+        EmployeeAssignment.contract_id == contract_id,
+        EmployeeAssignment.status == "Active"
+    ).count()
+
+    temp_assignments = await TemporaryAssignment.find(
+        TemporaryAssignment.contract_id == contract_id,
+        TemporaryAssignment.status == "Active"
+    ).to_list()
+
+    total_temp_cost = sum(
+        (ta.total_cost or 0.0) for ta in temp_assignments
+    )
+
+    total_required = sum(s.required_workers for s in sites)
+    total_assigned = sum(s.assigned_workers for s in sites)
+
+    return {
+        "contract": contract.model_dump(mode='json'),
+        "project": project.model_dump(mode='json') if project else None,
+        "sites": [s.model_dump(mode='json') for s in sites],
+        "total_sites": len(sites),
+        "total_required_workers": total_required,
+        "total_assigned_workers": total_assigned,
+        "company_employees": company_count,
+        "temp_workers": len(temp_assignments),
+        "total_temp_cost": total_temp_cost,
+        "fulfillment_rate": (total_assigned / total_required * 100) if total_required > 0 else 0,
+    }
+
+
 @router.delete("/{contract_id}", status_code=204)
 async def delete_contract(
     contract_id: int,

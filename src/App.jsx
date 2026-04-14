@@ -43,6 +43,10 @@ import SiteManagementPage from './pages/ProjectWorkflow/SiteManagementPage';
 import EmployeeAssignment from './pages/ProjectWorkflow/EmployeeAssignment';
 import TempWorkerManagement from './pages/ProjectWorkflow/TempWorkerManagement';
 import WorkflowPage from './pages/WorkflowPage';
+import ProjectDetailsPage from './pages/ProjectWorkflow/ProjectDetailsPage';
+import ContractDetailsPage from './pages/ProjectWorkflow/ContractDetailsPage';
+import SiteDetailsPage from './pages/ProjectWorkflow/SiteDetailsPage';
+import WorkflowOverview from './pages/ProjectWorkflow/WorkflowOverview';
 
 // --- PHASE 6: ANALYTICS & DASHBOARD PAGES ---
 import Dashboard from './pages/Dashboard';
@@ -108,6 +112,10 @@ const App = () => {
 
             {/* Project Workflow System */}
             <Route path="project-workflow" element={<ProjectDashboard />} />
+            <Route path="project-workflow/overview" element={<WorkflowOverview />} />
+            <Route path="project-workflow/:projectId/details" element={<ProjectDetailsPage />} />
+            <Route path="project-workflow/contracts/:contractId/details" element={<ContractDetailsPage />} />
+            <Route path="project-workflow/sites/:siteId/details" element={<SiteDetailsPage />} />
             <Route path="project-workflow/:projectId/contracts" element={<ContractManagementPage />} />
             <Route path="project-workflow/:projectId/sites" element={<SiteManagementPage />} />
             <Route path="sites/:siteId/assign-employees" element={<EmployeeAssignment />} />
