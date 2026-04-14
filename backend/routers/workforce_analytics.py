@@ -2,7 +2,7 @@
 
 import logging
 from typing import List, Optional
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends
 from backend.models import Employee, Site, Project, EmployeeAssignment, TemporaryAssignment
 from backend.security import get_current_active_user
@@ -140,7 +140,7 @@ async def get_workforce_utilization():
     """
     Returns workforce utilization data for charts (pie chart, bar chart, trend).
     """
-    today = date.today()
+    today = datetime.now()
     week_ago = today - timedelta(days=7)
 
     total_company = await Employee.find(

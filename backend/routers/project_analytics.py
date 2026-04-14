@@ -1,7 +1,7 @@
 # backend/routers/project_analytics.py
 
 import logging
-from datetime import date, timedelta
+from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends
 from backend.models import (
     Project, Contract, Site, Employee,
@@ -24,7 +24,7 @@ async def get_project_analytics():
     """
     Returns per-project performance metrics including contract value, workforce, and site progress.
     """
-    today = date.today()
+    today = datetime.now()
     projects = await Project.find().to_list()
     contracts = await Contract.find().to_list()
 
