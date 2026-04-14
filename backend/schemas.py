@@ -150,7 +150,12 @@ class AdminUpdate(BaseModel):
     full_name: Optional[str] = None
     designation: Optional[str] = None
     role: Optional[str] = None
+    role_id: Optional[int] = None
     is_active: Optional[bool] = None
+    phone: Optional[str] = None
+
+class AdminPasswordUpdate(BaseModel):
+    new_password: str
 
 class AdminPublic(BaseModel):
     """
