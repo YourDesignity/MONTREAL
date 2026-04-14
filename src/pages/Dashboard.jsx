@@ -1,98 +1,204 @@
 // src/pages/Dashboard.jsx
-// Phase 6: Comprehensive Dashboard Overview
+// Financial Profit & Loss Infographics Dashboard
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Row, Col, Card, Statistic, Typography, Button, Space,
-  Spin, Empty, Divider, Tag, Progress, Alert,
+  Spin, Tag, Alert, Progress,
 } from 'antd';
 import {
-  ProjectOutlined, TeamOutlined, ApartmentOutlined,
-  UserOutlined, WarningOutlined, PlusOutlined,
-  ReloadOutlined, BarChartOutlined, AuditOutlined,
-  UsergroupAddOutlined, FileSearchOutlined,
+  DollarOutlined, LineChartOutlined, FundOutlined, WarningOutlined,
+  ArrowUpOutlined, ArrowDownOutlined, ReloadOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { fetchWithAuth } from '../services/apiService.jsx';
-import QuickActionButton from '../components/Dashboard/QuickActionButton.jsx';
-import ProjectStatusCard from '../components/Dashboard/ProjectStatusCard.jsx';
-import ContractExpiryAlert from '../components/Dashboard/ContractExpiryAlert.jsx';
-import WorkforceGapCard from '../components/Dashboard/WorkforceGapCard.jsx';
 
 const { Title, Text } = Typography;
 
+// ─── Simple inline chart components (no external library needed) ────────────
+
+const PALETTE = ['#52c41a', '#1890ff', '#fa8c16', '#ff4d4f', '#722ed1', '#13c2c2'];
+
+/** Vertical bar chart */
+const MiniBarChart = ({ data, valueKey, nameKey, colors }) => {
+  if (!data || data.length === 0) return <Text type="secondary">No data</Text>;
+  const maxVal = Math.max(...data.map((d) => Math.abs(d[valueKey] || 0)), 1);
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 200, padding: '0 4px' }}>
+      {data.slice(0, 8).map((item, i) => {
+        const val = item[valueKey] || 0;
+        const pct = Math.round((Math.abs(val) / maxVal) * 100);
+        const color = val < 0 ? '#ff4d4f' : (colors ? colors[i % colors.length] : PALETTE[i % PALETTE.length]);
+        return (
+          <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+            <Text style={{ fontSize: 10, color: '#888' }}>
+              {val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val.toFixed(0)}
+            </Text>
+            <div
+              style={{
+                width: '100%',
+                height: `${Math.max(pct, 4)}%`,
+                background: color,
+                borderRadius: '4px 4px 0 0',
+                transition: 'height 0.5s',
+              }}
+            />
+            <Text
+              style={{ fontSize: 9, color: '#555', textAlign: 'center', wordBreak: 'break-word', lineHeight: 1.2 }}
+              title={item[nameKey]}
+            >
+              {String(item[nameKey] || '').slice(0, 10)}
+            </Text>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+/** Horizontal bar chart for profit by contract */
+const HorizontalBarChart = ({ data, valueKey, nameKey }) => {
+  if (!data || data.length === 0) return <Text type="secondary">No contract data available</Text>;
+  const maxVal = Math.max(...data.map((d) => Math.abs(d[valueKey] || 0)), 1);
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {data.slice(0, 6).map((item, i) => {
+        const val = item[valueKey] || 0;
+        const pct = Math.round((Math.abs(val) / maxVal) * 100);
+        const color = val < 0 ? '#ff4d4f' : val < maxVal * 0.3 ? '#fa8c16' : '#52c41a';
+        return (
+          <div key={i}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+              <Text style={{ fontSize: 11 }} title={item[nameKey]}>
+                {String(item[nameKey] || '').slice(0, 20)}
+              </Text>
+              <Text style={{ fontSize: 11, color, fontWeight: 600 }}>
+                {val >= 0 ? '+' : ''}{val >= 1000 || val <= -1000 ? `${(val / 1000).toFixed(1)}k` : val.toFixed(0)}
+              </Text>
+            </div>
+            <div style={{ background: '#f0f0f0', borderRadius: 4, height: 12, overflow: 'hidden' }}>
+              <div
+                style={{
+                  width: `${Math.max(pct, 2)}%`,
+                  height: '100%',
+                  background: color,
+                  borderRadius: 4,
+                  transition: 'width 0.5s',
+                }}
+              />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+/** Multi-series line chart */
+const MultiLineChart = ({ data, series }) => {
+  if (!data || data.length === 0) return <Text type="secondary">No trend data available</Text>;
+  const allVals = data.flatMap((d) => series.map((s) => d[s.key] || 0));
+  const maxVal = Math.max(...allVals, 1);
+  const minVal = Math.min(...allVals, 0);
+  const range = maxVal - minVal || 1;
+  const chartH = 180;
+
+  const getY = (val) => chartH - Math.round(((val - minVal) / range) * (chartH - 20)) - 10;
+
+  const width = 100 / (data.length - 1 || 1);
+
+  return (
+    <div style={{ position: 'relative', height: chartH + 30, overflow: 'hidden' }}>
+      <svg width="100%" height={chartH} viewBox={`0 0 400 ${chartH}`} preserveAspectRatio="none">
+        {series.map((s) => {
+          const points = data
+            .map((d, i) => `${i * (400 / (data.length - 1 || 1))},${getY(d[s.key] || 0)}`)
+            .join(' ');
+          return (
+            <polyline
+              key={s.key}
+              fill="none"
+              stroke={s.color}
+              strokeWidth="2"
+              points={points}
+            />
+          );
+        })}
+      </svg>
+      {/* X axis labels */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+        {data.map((d, i) => (
+          <Text key={i} style={{ fontSize: 10, color: '#888' }}>{d.month}</Text>
+        ))}
+      </div>
+      {/* Legend */}
+      <div style={{ display: 'flex', gap: 12, marginTop: 8, flexWrap: 'wrap' }}>
+        {series.map((s) => (
+          <Space key={s.key} size={4}>
+            <div style={{ width: 12, height: 3, background: s.color, borderRadius: 2 }} />
+            <Text style={{ fontSize: 11 }}>{s.label}</Text>
+          </Space>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/** Segmented pie chart */
+const SimplePieChart = ({ segments }) => {
+  const total = segments.reduce((sum, s) => sum + (s.value || 0), 0) || 1;
+  return (
+    <div>
+      {segments.map((seg, i) => (
+        <div key={i} style={{ marginBottom: 8 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+            <Space size={6}>
+              <div style={{ width: 10, height: 10, borderRadius: '50%', background: seg.color }} />
+              <Text style={{ fontSize: 12 }}>{seg.label}</Text>
+            </Space>
+            <Text style={{ fontSize: 12 }}>{((seg.value / total) * 100).toFixed(1)}%</Text>
+          </div>
+          <Progress
+            percent={Math.round((seg.value / total) * 100)}
+            strokeColor={seg.color}
+            showInfo={false}
+            size="small"
+          />
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// ─── Main Dashboard Component ────────────────────────────────────────────────
+
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [summary, setSummary] = useState(null);
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const loadSummary = useCallback(async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchWithAuth('/dashboard/summary');
-      setSummary(data);
+      const result = await fetchWithAuth('/dashboard/profit-loss');
+      setData(result);
     } catch (err) {
-      setError(err.message || 'Failed to load dashboard data');
+      setError(err.message || 'Failed to load financial data');
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadSummary();
-  }, [loadSummary]);
-
-  const quickActions = [
-    {
-      icon: <PlusOutlined />,
-      label: 'New Project',
-      description: 'Create a project',
-      color: '#52c41a',
-      onClick: () => navigate('/project-workflow'),
-    },
-    {
-      icon: <UserOutlined />,
-      label: 'Add Employee',
-      description: 'Register employee',
-      color: '#1677ff',
-      onClick: () => navigate('/add-employee'),
-    },
-    {
-      icon: <UsergroupAddOutlined />,
-      label: 'Assign Workers',
-      description: 'To a site',
-      color: '#fa8c16',
-      onClick: () => navigate('/workforce-allocation'),
-    },
-    {
-      icon: <ApartmentOutlined />,
-      label: 'All Projects',
-      description: 'View workflow',
-      color: '#722ed1',
-      onClick: () => navigate('/project-workflow'),
-    },
-    {
-      icon: <BarChartOutlined />,
-      label: 'Analytics',
-      description: 'View reports',
-      color: '#eb2f96',
-      onClick: () => navigate('/analytics'),
-    },
-    {
-      icon: <FileSearchOutlined />,
-      label: 'Project Report',
-      description: 'Performance data',
-      color: '#13c2c2',
-      onClick: () => navigate('/analytics'),
-    },
-  ];
+    loadData();
+  }, [loadData]);
 
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
-        <Spin size="large" description="Loading dashboard..." />
+        <Spin size="large" tip="Loading financial data..." />
       </div>
     );
   }
@@ -103,210 +209,195 @@ const Dashboard = () => {
         type="error"
         message="Dashboard Error"
         description={error}
-        action={
-          <Button onClick={loadSummary} icon={<ReloadOutlined />}>
-            Retry
-          </Button>
-        }
+        action={<Button onClick={loadData} icon={<ReloadOutlined />}>Retry</Button>}
         style={{ margin: 24 }}
       />
     );
   }
 
-  const s = summary || {};
+  const d = data || {};
+
+  const formatCurrency = (value) => `$${(value || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+
+  const costSegments = [
+    { label: 'Employee Salaries', value: d.cost_breakdown?.employee_salaries || 0, color: '#52c41a' },
+    { label: 'External Workers', value: d.cost_breakdown?.external_workers || 0, color: '#1890ff' },
+  ];
+
+  const trendSeries = [
+    { key: 'revenue', label: 'Revenue', color: '#52c41a' },
+    { key: 'costs', label: 'Costs', color: '#ff4d4f' },
+    { key: 'profit', label: 'Profit', color: '#1890ff' },
+  ];
 
   return (
     <div style={{ padding: '0 4px' }}>
-      {/* ── Header ── */}
+      {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <Title level={3} style={{ margin: 0 }}>
-          📊 Dashboard Overview
-        </Title>
-        <Button icon={<ReloadOutlined />} onClick={loadSummary} size="small">
-          Refresh
-        </Button>
+        <div>
+          <Title level={3} style={{ margin: 0 }}>💰 Financial Dashboard</Title>
+          <Text type="secondary">Profit &amp; Loss Analytics</Text>
+        </div>
+        <Button icon={<ReloadOutlined />} onClick={loadData}>Refresh</Button>
       </div>
 
-      {/* ── Stats Cards ── */}
+      {/* KPI Cards */}
       <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
-        <Col xs={12} sm={8} md={6} lg={4}>
-          <Card size="small" style={{ borderRadius: 10, borderLeft: '4px solid #52c41a' }}>
+        <Col xs={24} sm={12} md={6}>
+          <Card size="small" style={{ borderLeft: '4px solid #52c41a', borderRadius: 10 }}>
             <Statistic
-              title="Total Projects"
-              value={s.total_projects ?? 0}
-              prefix={<ProjectOutlined style={{ color: '#52c41a' }} />}
-              styles={{ content: { color: '#52c41a', fontSize: 22 } }}
+              title="Total Revenue"
+              value={d.total_revenue || 0}
+              prefix={<DollarOutlined style={{ color: '#52c41a' }} />}
+              formatter={(val) => formatCurrency(val)}
+              valueStyle={{ color: '#52c41a', fontSize: 20 }}
             />
-            <div style={{ marginTop: 4 }}>
-              <Tag color="green" style={{ fontSize: 10 }}>{s.active_projects ?? 0} Active</Tag>
-              <Tag color="blue" style={{ fontSize: 10 }}>{s.completed_projects ?? 0} Done</Tag>
-            </div>
+            <Text type="secondary" style={{ fontSize: 11 }}>
+              From {d.active_contracts || 0} active contracts
+            </Text>
           </Card>
         </Col>
 
-        <Col xs={12} sm={8} md={6} lg={4}>
-          <Card size="small" style={{ borderRadius: 10, borderLeft: '4px solid #1677ff' }}>
+        <Col xs={24} sm={12} md={6}>
+          <Card size="small" style={{ borderLeft: '4px solid #ff4d4f', borderRadius: 10 }}>
             <Statistic
-              title="Total Employees"
-              value={s.total_employees ?? 0}
-              prefix={<TeamOutlined style={{ color: '#1677ff' }} />}
-              styles={{ content: { color: '#1677ff', fontSize: 22 } }}
+              title="Total Costs"
+              value={d.total_costs || 0}
+              prefix={<FundOutlined style={{ color: '#ff4d4f' }} />}
+              formatter={(val) => formatCurrency(val)}
+              valueStyle={{ color: '#ff4d4f', fontSize: 20 }}
             />
-            <div style={{ marginTop: 4 }}>
-              <Tag color="green" style={{ fontSize: 10 }}>{s.available_employees ?? 0} Free</Tag>
-              <Tag color="blue" style={{ fontSize: 10 }}>{s.assigned_employees ?? 0} Assigned</Tag>
-            </div>
+            <Text type="secondary" style={{ fontSize: 11 }}>Employee + External</Text>
           </Card>
         </Col>
 
-        <Col xs={12} sm={8} md={6} lg={4}>
-          <Card size="small" style={{ borderRadius: 10, borderLeft: '4px solid #722ed1' }}>
+        <Col xs={24} sm={12} md={6}>
+          <Card size="small" style={{ borderLeft: '4px solid #1890ff', borderRadius: 10 }}>
             <Statistic
-              title="Active Sites"
-              value={s.total_sites ?? 0}
-              prefix={<ApartmentOutlined style={{ color: '#722ed1' }} />}
-              styles={{ content: { color: '#722ed1', fontSize: 22 } }}
+              title="Net Profit"
+              value={d.net_profit || 0}
+              prefix={(d.net_profit || 0) >= 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
+              formatter={(val) => formatCurrency(val)}
+              valueStyle={{ color: (d.net_profit || 0) >= 0 ? '#3f8600' : '#cf1322', fontSize: 20 }}
             />
+            <Text type="secondary" style={{ fontSize: 11 }}>
+              {d.profit_margin || 0}% overall margin
+            </Text>
           </Card>
         </Col>
 
-        <Col xs={12} sm={8} md={6} lg={4}>
-          <Card size="small" style={{ borderRadius: 10, borderLeft: '4px solid #fa8c16' }}>
+        <Col xs={24} sm={12} md={6}>
+          <Card size="small" style={{ borderLeft: '4px solid #fa8c16', borderRadius: 10 }}>
             <Statistic
-              title="External Workers"
-              value={s.active_external_workers ?? 0}
-              prefix={<UserOutlined style={{ color: '#fa8c16' }} />}
-              styles={{ content: { color: '#fa8c16', fontSize: 22 } }}
+              title="Profitable Contracts"
+              value={`${d.profitable_contracts || 0} / ${d.active_contracts || 0}`}
+              prefix={<LineChartOutlined style={{ color: '#fa8c16' }} />}
+              valueStyle={{ fontSize: 20 }}
             />
-            <Text type="secondary" style={{ fontSize: 11 }}>Currently active</Text>
-          </Card>
-        </Col>
-
-        <Col xs={12} sm={8} md={6} lg={4}>
-          <Card size="small" style={{ borderRadius: 10, borderLeft: '4px solid #ff4d4f' }}>
-            <Statistic
-              title="Contract Alerts"
-              value={s.contracts_expiring_soon ?? 0}
-              prefix={<WarningOutlined style={{ color: '#ff4d4f' }} />}
-              styles={{ content: { color: '#ff4d4f', fontSize: 22 } }}
-            />
-            <Text type="secondary" style={{ fontSize: 11 }}>Expiring ≤ 30 days</Text>
-          </Card>
-        </Col>
-
-        <Col xs={12} sm={8} md={6} lg={4}>
-          <Card size="small" style={{ borderRadius: 10, borderLeft: '4px solid #13c2c2' }}>
-            <Statistic
-              title="Utilization"
-              value={s.workforce_utilization ?? 0}
-              suffix="%"
-              prefix={<AuditOutlined style={{ color: '#13c2c2' }} />}
-              styles={{ content: { color: '#13c2c2', fontSize: 22 } }}
-            />
-            <Progress
-              percent={s.workforce_utilization ?? 0}
-              size="small"
-              showInfo={false}
-              strokeColor="#13c2c2"
-              style={{ marginTop: 4 }}
-            />
+            <Text type="secondary" style={{ fontSize: 11 }}>
+              {d.at_risk_contracts || 0} at risk or in loss
+            </Text>
           </Card>
         </Col>
       </Row>
 
-      {/* ── Quick Actions ── */}
-      <Card
-        title="⚡ Quick Actions"
-        size="small"
-        style={{ borderRadius: 10, marginBottom: 20 }}
-        styles={{ body: { padding: '12px 16px' } }}
-      >
-        <Row gutter={[12, 12]}>
-          {quickActions.map((qa) => (
-            <Col key={qa.label} xs={8} sm={6} md={4}>
-              <QuickActionButton {...qa} />
-            </Col>
-          ))}
-        </Row>
-      </Card>
+      {/* Charts Row 1 */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+        {/* Revenue vs Costs Trend */}
+        <Col xs={24} lg={14}>
+          <Card title="📈 Revenue vs Costs Trend (Last 6 Months)" size="small" style={{ borderRadius: 10 }}>
+            <MultiLineChart data={d.monthly_trend || []} series={trendSeries} />
+          </Card>
+        </Col>
 
+        {/* Cost Distribution Pie */}
+        <Col xs={24} lg={10}>
+          <Card title="🥧 Cost Distribution" size="small" style={{ borderRadius: 10 }}>
+            <SimplePieChart segments={costSegments} />
+            <div style={{ marginTop: 12, textAlign: 'center' }}>
+              <Tag color="green">
+                Employee: {d.cost_breakdown?.employee_percentage || 0}%
+              </Tag>
+              <Tag color="blue">
+                External: {d.cost_breakdown?.external_percentage || 0}%
+              </Tag>
+            </div>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Charts Row 2 */}
       <Row gutter={[16, 16]}>
-        {/* ── Active Projects ── */}
+        {/* Profit by Contract */}
         <Col xs={24} lg={14}>
           <Card
-            title="🏗️ Active Projects"
+            title="💰 Profit by Contract"
             size="small"
-            style={{ borderRadius: 10, marginBottom: 16 }}
+            style={{ borderRadius: 10 }}
             extra={
               <Button size="small" onClick={() => navigate('/project-workflow')}>
                 View All
               </Button>
             }
           >
-            {(s.projects ?? []).length === 0 ? (
-              <Empty description="No active projects" styles={{ image: { height: 40 } }} />
-            ) : (
-              <Row gutter={[12, 12]}>
-                {(s.projects ?? []).slice(0, 6).map((project) => (
-                  <Col key={project.project_id} xs={24} sm={12}>
-                    <ProjectStatusCard project={project} />
-                  </Col>
-                ))}
-              </Row>
-            )}
+            <HorizontalBarChart
+              data={d.contracts || []}
+              valueKey="profit"
+              nameKey="contract_name"
+            />
           </Card>
         </Col>
 
-        {/* ── Right Column ── */}
+        {/* At-Risk Contracts */}
         <Col xs={24} lg={10}>
-          {/* Contract Expiry Alerts */}
           <Card
             title={
               <Space>
                 <WarningOutlined style={{ color: '#fa8c16' }} />
-                <span>Contract Expiry Alerts</span>
-                {(s.expiring_contracts ?? []).length > 0 && (
-                  <Tag color="orange">{(s.expiring_contracts ?? []).length}</Tag>
+                <span>At-Risk &amp; Loss Contracts</span>
+                {(d.at_risk || []).length > 0 && (
+                  <Tag color="orange">{(d.at_risk || []).length}</Tag>
                 )}
               </Space>
             }
             size="small"
-            style={{ borderRadius: 10, marginBottom: 16 }}
+            style={{ borderRadius: 10, maxHeight: 370, overflow: 'auto' }}
           >
-            {(s.expiring_contracts ?? []).length === 0 ? (
-              <Empty description="No contracts expiring soon" styles={{ image: { height: 40 } }} />
+            {(d.at_risk || []).length === 0 ? (
+              <div style={{ textAlign: 'center', padding: 20 }}>
+                <Text type="secondary">✅ All contracts are profitable!</Text>
+              </div>
             ) : (
-              (s.expiring_contracts ?? []).map((c) => (
-                <ContractExpiryAlert key={c.contract_id} contract={c} />
-              ))
-            )}
-          </Card>
-
-          {/* Workforce Gaps */}
-          <Card
-            title={
-              <Space>
-                <TeamOutlined style={{ color: '#ff4d4f' }} />
-                <span>Workforce Gaps</span>
-                {(s.workforce_gaps ?? []).length > 0 && (
-                  <Tag color="red">{(s.workforce_gaps ?? []).length}</Tag>
-                )}
+              <Space direction="vertical" style={{ width: '100%' }}>
+                {(d.at_risk || []).map((contract) => (
+                  <Card
+                    key={contract.contract_id}
+                    size="small"
+                    style={{ backgroundColor: contract.status === 'loss' ? '#fff1f0' : '#fff7e6' }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <Text strong style={{ fontSize: 13 }}>{contract.contract_name}</Text>
+                        <br />
+                        <Text type="secondary" style={{ fontSize: 11 }}>{contract.project_name}</Text>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <Tag color={contract.status_color}>{contract.status.toUpperCase()}</Tag>
+                        <br />
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            color: contract.profit < 0 ? '#cf1322' : '#fa8c16',
+                            fontWeight: 600,
+                          }}
+                        >
+                          {formatCurrency(contract.profit)} ({contract.margin}%)
+                        </Text>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
               </Space>
-            }
-            size="small"
-            style={{ borderRadius: 10 }}
-            extra={
-              <Button size="small" onClick={() => navigate('/workforce-allocation')}>
-                Fix Gaps
-              </Button>
-            }
-          >
-            {(s.workforce_gaps ?? []).length === 0 ? (
-              <Empty description="No workforce gaps" styles={{ image: { height: 40 } }} />
-            ) : (
-              (s.workforce_gaps ?? []).slice(0, 5).map((gap) => (
-                <WorkforceGapCard key={gap.site_id} gap={gap} />
-              ))
             )}
           </Card>
         </Col>
