@@ -324,7 +324,25 @@ async def update_admin(admin_id: int, admin_update: schemas.AdminUpdate):
     return {"status": "success"}
 
 # =============================================================================
-# 6. DELETE ADMIN
+# 6. UPDATE ADMIN PASSWORD
+# =============================================================================
+
+@router.put("/{admin_id}/password", dependencies=[Depends(require_permission("admin:edit"))])
+async def update_admin_password(admin_id: int, password_data: schemas.AdminPasswordUpdate):
+    logger.info(f"ENDPOINT START: PUT /admins/{admin_id}/password")
+
+    admin = await Admin.find_one(Admin.uid == admin_id)
+    if not admin:
+        logger.warning(f"LOOKUP FAILED: Admin {admin_id} not found.")
+        raise HTTPException(status_code=404, detail="Admin not found")
+
+    admin.hashed_password = get_password_hash(password_data.new_password)
+    await admin.save()
+    logger.info(f"Password updated for admin {admin_id}.")
+    return {"status": "success", "message": "Password updated successfully"}
+
+# =============================================================================
+# 7. DELETE ADMIN
 # =============================================================================
 
 @router.delete("/{admin_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_permission("admin:delete"))])

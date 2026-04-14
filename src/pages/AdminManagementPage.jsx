@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Card, Row, Col, Typography, Button, Table, 
-  Avatar, Tag, Modal, Form, Input, Select, message, Space 
+  Avatar, Tag, Modal, Form, Input, Select, message, Space, Popconfirm
 } from 'antd';
 import { 
   PlusOutlined, UserOutlined, SafetyCertificateOutlined, 
-  MailOutlined, IdcardOutlined, LockOutlined 
+  MailOutlined, IdcardOutlined, LockOutlined, EditOutlined, DeleteOutlined
 } from '@ant-design/icons';
 
-import { getAdmins, createAdmin } from '../services/apiService';
+import { getAdmins, createAdmin, deleteAdmin } from '../services/apiService';
+import EditAdminModal from '../components/Admin/EditAdminModal';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -18,6 +19,8 @@ function AdminManagementPage() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editAdmin, setEditAdmin] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   
   const [form] = Form.useForm();
 
@@ -73,7 +76,30 @@ function AdminManagementPage() {
     }
   };
 
-  // --- 3. Table Columns ---
+  // --- 3. Edit Admin ---
+  const handleEditAdmin = (record) => {
+    setEditAdmin(record);
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditSaved = () => {
+    setIsEditModalOpen(false);
+    setEditAdmin(null);
+    fetchAdmins();
+  };
+
+  // --- 4. Delete Admin ---
+  const handleDeleteAdmin = async (adminId) => {
+    try {
+      await deleteAdmin(adminId);
+      message.success('Admin deleted successfully');
+      fetchAdmins();
+    } catch (err) {
+      message.error('Failed to delete admin: ' + (err.message || 'Unknown error'));
+    }
+  };
+
+  // --- 5. Table Columns ---
   const columns = [
     {
       title: 'ADMIN USER',
@@ -136,7 +162,35 @@ function AdminManagementPage() {
           {date ? new Date(date).toLocaleDateString() : '-'}
         </Text>
       )
-    }
+    },
+    {
+      title: 'ACTIONS',
+      key: 'actions',
+      render: (_, record) => (
+        <Space>
+          <Button
+            type="link"
+            icon={<EditOutlined />}
+            onClick={() => handleEditAdmin(record)}
+            style={{ padding: '0 4px' }}
+          >
+            Edit
+          </Button>
+          <Popconfirm
+            title="Delete this admin?"
+            description="This action cannot be undone."
+            onConfirm={() => handleDeleteAdmin(record.id)}
+            okText="Delete"
+            okButtonProps={{ danger: true }}
+            cancelText="Cancel"
+          >
+            <Button type="link" danger icon={<DeleteOutlined />} style={{ padding: '0 4px' }}>
+              Delete
+            </Button>
+          </Popconfirm>
+        </Space>
+      ),
+    },
   ];
 
   return (
@@ -244,6 +298,13 @@ function AdminManagementPage() {
           </Row>
         </Form>
       </Modal>
+      {/* --- Edit Admin Modal --- */}
+      <EditAdminModal
+        admin={editAdmin}
+        open={isEditModalOpen}
+        onClose={() => { setIsEditModalOpen(false); setEditAdmin(null); }}
+        onSaved={handleEditSaved}
+      />
     </div>
   );
 }
