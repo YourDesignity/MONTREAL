@@ -36,7 +36,12 @@ const Sidebar = () => {
     return null;
   }
 
-  const hasPerm = (perm) => !perm || (user?.perms && user.perms.includes(perm));
+  const hasPerm = (perm) => {
+    if (user?.role === 'SuperAdmin' || user?.role === 'Admin') {
+      return true;
+    }
+    return !perm || (user?.perms && user.perms.includes(perm));
+  };
   const isActive = (path) => location.pathname === path;
   const isSiteManager = user?.role === 'Site Manager';
 
