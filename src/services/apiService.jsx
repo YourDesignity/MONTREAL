@@ -216,6 +216,11 @@ export const getAdminById = (adminId) => fetchWithAuth(`/admins/${adminId}`);
 export const updateAdminProfile = (adminId, data) => fetchWithAuth(`/admins/${adminId}`, { method: 'PUT', body: JSON.stringify(data) });
 export const updateAdminPassword = (adminId, passwordData) => fetchWithAuth(`/admins/${adminId}/password`, { method: 'PUT', body: JSON.stringify(passwordData) });
 export const deleteAdmin = (adminId) => fetchWithAuth(`/admins/${adminId}`, { method: 'DELETE' });
+export const uploadAdminPhoto = (adminId, file) => {
+    const formData = new FormData();
+    formData.append('photo', file);
+    return fetchWithAuth(`/admins/${adminId}/photo`, { method: 'POST', body: formData });
+};
 
 // --- 8. MANAGER PROFILES ---
 export const getManagerProfiles = () => fetchWithAuth('/managers/profiles');
@@ -294,7 +299,7 @@ const apiService = {
     getVehicles, addVehicle, getTrips, startTrip, endTrip, getMaintenanceLogs, addMaintenanceLog, getFuelLogs, addFuelLog, getExpenses, addExpense,
     getContracts, addContract, deleteContract, addProjectExpense,
     getInvoices, createInvoice, payInvoice, downloadInvoicePDF,
-    getAdmins, createAdmin, getAdminById, updateAdminProfile, updateAdminPassword, deleteAdmin, getInventory, addInventoryItem, deleteInventoryItem,
+    getAdmins, createAdmin, getAdminById, updateAdminProfile, updateAdminPassword, deleteAdmin, uploadAdminPhoto, getInventory, addInventoryItem, deleteInventoryItem,
     getManagers,
     getManagerProfiles, getManagerProfileById, createManagerProfile, updateManagerProfile, deleteManagerProfile,
     updateManagerCredentials, updateManagerSites,

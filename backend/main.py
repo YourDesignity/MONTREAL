@@ -165,7 +165,9 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
         "role": user.role,
         "power": power_level,
         "perms": user.permissions or [],       
-        "sites": user.assigned_site_uids or [] 
+        "sites": user.assigned_site_uids or [],
+        "full_name": user.full_name,
+        "profile_photo": user.profile_photo,
     }
     
     access_token = security.create_access_token(
