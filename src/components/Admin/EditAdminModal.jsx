@@ -12,7 +12,8 @@ import { updateAdminProfile, updateAdminPassword } from '../../services/apiServi
 const { Option } = Select;
 const { Text, Title } = Typography;
 
-// Role permission map (mirrors backend/config/roles.json)
+// Role permission map (mirrors backend/config/roles.json).
+// NOTE: Keep in sync with backend/config/roles.json when roles change.
 const ROLE_PERMISSIONS = {
   1: { name: 'SuperAdmin', permissions: ['all'] },
   2: {
@@ -28,6 +29,15 @@ const ROLE_PERMISSIONS = {
       'employee:view_assigned', 'attendance:update', 'site:view', 'schedule:edit',
     ],
   },
+};
+
+// Shared helper: resolve role string (object.name or plain string) to a legacy ID
+const getRoleId = (roleNameOrObj) => {
+  const roleName = typeof roleNameOrObj === 'object' && roleNameOrObj !== null
+    ? roleNameOrObj.name
+    : roleNameOrObj;
+  const entry = Object.entries(ROLE_PERMISSIONS).find(([, v]) => v.name === roleName);
+  return entry ? parseInt(entry[0]) : 2;
 };
 
 // ---------------------------------------------------------------------------
@@ -48,11 +58,6 @@ function ProfileTab({ adminId, initialData, onSaved }) {
       });
     }
   }, [initialData, form]);
-
-  const getRoleId = (roleName) => {
-    const entry = Object.entries(ROLE_PERMISSIONS).find(([, v]) => v.name === roleName);
-    return entry ? parseInt(entry[0]) : 2;
-  };
 
   const handleSave = async () => {
     try {
@@ -150,10 +155,6 @@ function PasswordTab({ adminId }) {
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
-      if (values.new_password !== values.confirm_password) {
-        message.error('Passwords do not match');
-        return;
-      }
       setSubmitting(true);
       await updateAdminPassword(adminId, { new_password: values.new_password });
       message.success('Password updated successfully!');
@@ -251,11 +252,6 @@ function EditAdminModal({ admin, open, onClose, onSaved }) {
     if (open) setActiveTab('profile');
   }, [open, admin?.id]);
 
-  const getRoleId = (roleName) => {
-    const entry = Object.entries(ROLE_PERMISSIONS).find(([, v]) => v.name === roleName);
-    return entry ? parseInt(entry[0]) : 2;
-  };
-
   const tabItems = [
     {
       key: 'profile',
@@ -273,7 +269,7 @@ function EditAdminModal({ admin, open, onClose, onSaved }) {
       key: 'permissions',
       label: 'Permissions',
       children: admin ? (
-        <PermissionsTab currentRoleId={getRoleId(admin.role?.name || admin.role)} />
+        <PermissionsTab currentRoleId={getRoleId(admin.role)} />
       ) : null,
     },
   ];
