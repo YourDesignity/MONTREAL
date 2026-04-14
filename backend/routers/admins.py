@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 # --- Imports ---
 from backend.models import Admin
 from backend import schemas
-from backend.security import get_current_active_user, get_password_hash, verify_password, require_permission
+from backend.security import get_current_active_user, get_password_hash, verify_password, require_permission, PRIVILEGED_ROLES
 from backend.database import get_next_uid
 from backend.utils.logger import setup_logger 
 
@@ -292,14 +292,17 @@ async def create_admin(admin_data: schemas.AdminCreate, current_user: dict = Dep
     logger.debug(f"CONFIG LOADED: Mapped ID {admin_data.role_id} -> '{target_role_name}'. Assigning {len(default_perms)} perms.")
 
     # 4. Security Check
-    required_perm = 'admin:create:admin'
-    if target_role_name == 'Site Manager':
-        required_perm = 'admin:create:manager'
+    # SuperAdmin and Admin bypass permission checks
+    user_role = current_user.get("role")
+    if user_role not in PRIVILEGED_ROLES:
+        required_perm = 'admin:create:admin'
+        if target_role_name == 'Site Manager':
+            required_perm = 'admin:create:manager'
 
-    user_perms = current_user.get("perms", [])
-    if required_perm not in user_perms:
-        logger.critical(f"SECURITY: User {current_user.get('email')} missing perm '{required_perm}'")
-        raise HTTPException(status_code=403, detail=f"Missing permission: {required_perm}")
+        user_perms = current_user.get("perms", [])
+        if required_perm not in user_perms:
+            logger.critical(f"SECURITY: User {current_user.get('email')} missing perm '{required_perm}'")
+            raise HTTPException(status_code=403, detail=f"Missing permission: {required_perm}")
 
     if await Admin.find_one(Admin.email == admin_data.email):
         raise HTTPException(status_code=400, detail="Email already registered")

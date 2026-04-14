@@ -100,19 +100,27 @@ async def get_current_active_user(token: str = Depends(oauth2_scheme)) -> Dict[s
 # 5. PERMISSION CHECKER
 # =============================================================================
 
+# Roles that have implicit access to all permissions (bypass per-permission checks)
+PRIVILEGED_ROLES = {"SuperAdmin", "Admin"}
+
 def require_permission(required_permission: str):
     """
     Factory that creates a dependency to check for a specific permission string.
+    SuperAdmin and Admin roles bypass all permission checks.
     """
     async def permission_checker(current_user: dict = Depends(get_current_active_user)) -> dict:
-        # The 'perms' key was added to the token in main.py
+        # SuperAdmin and Admin have ALL permissions (bypass check)
+        user_role = current_user.get("role")
+        if user_role in PRIVILEGED_ROLES:
+            return current_user
+
+        # For other roles (e.g. Site Manager), check permissions array
         user_permissions = current_user.get("perms", [])
-        
         if required_permission not in user_permissions:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Permission '{required_permission}' required. Access denied."
             )
         return current_user
-        
+
     return permission_checker

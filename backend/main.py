@@ -116,6 +116,11 @@ static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
 os.makedirs(static_dir, exist_ok=True) 
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
+# --- UPLOADS (profile photos, documents, etc.) ---
+uploads_dir = os.path.join(os.path.dirname(__file__), "uploads")
+os.makedirs(os.path.join(uploads_dir, "admin_photos"), exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
+
 # --- Password Hashing ---
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
