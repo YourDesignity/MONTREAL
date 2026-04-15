@@ -649,7 +649,16 @@ async def download_employee_document(
     if not file_path or not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="Document not found")
 
-    return FileResponse(file_path, filename=os.path.basename(file_path))
+    filename = os.path.basename(file_path)
+    if document_type == "photo":
+        return FileResponse(file_path, filename=filename)
+    # Use inline disposition so PDFs and images render in-browser (preview).
+    # Double-quote the filename to safely handle spaces and special characters.
+    safe_filename = filename.replace('"', '\\"')
+    return FileResponse(
+        file_path,
+        headers={"Content-Disposition": f'inline; filename="{safe_filename}"'},
+    )
 
 
 

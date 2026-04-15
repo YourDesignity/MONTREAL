@@ -207,13 +207,16 @@ async def get_contract_workforce_summary(
         EmployeeAssignment.status == "Active"
     ).count()
 
-    temp_assignments = await TemporaryAssignment.find(
-        TemporaryAssignment.contract_id == contract_id,
-        TemporaryAssignment.status == "Active"
-    ).to_list()
+    temp_assignments = []
+    if contract.project_id:
+        temp_assignments = await TemporaryAssignment.find(
+            TemporaryAssignment.project_id == contract.project_id,
+            TemporaryAssignment.status == "Active"
+        ).to_list()
 
     total_temp_cost = sum(
-        (ta.total_cost or 0.0) for ta in temp_assignments
+        (ta.daily_rate or 0.0) * (ta.total_days or 0)
+        for ta in temp_assignments
     )
 
     total_required = sum(s.required_workers for s in sites)
