@@ -148,9 +148,15 @@ def hashed(plain: str) -> str:
     return pwd_ctx.hash(plain)
 
 
+def to_date_only(dt: datetime) -> datetime:
+    """Strip time component from datetime, returning midnight (00:00:00)."""
+    return dt.replace(hour=0, minute=0, second=0, microsecond=0)
+
+
 def rand_date_between(start: datetime, end: datetime) -> datetime:
     delta = max(0, (end - start).days)
-    return start + timedelta(days=random.randint(0, delta))
+    result = start + timedelta(days=random.randint(0, delta))
+    return to_date_only(result)
 
 
 def now() -> datetime:
@@ -359,11 +365,11 @@ async def create_projects_contracts_sites(admins: list) -> tuple:
             cnt_uid = await get_next_uid("contracts")
             c_start = rand_date_between(proj_start, proj_start + timedelta(days=60))
             c_end_days = random.randint(60, 365)
-            c_end = c_start + timedelta(days=c_end_days)
+            c_end = to_date_only(c_start + timedelta(days=c_end_days))
 
             # ~15% of contracts expiring very soon (triggers alerts)
             if random.random() < 0.15:
-                c_end = days_from_now(random.randint(5, 25))
+                c_end = to_date_only(days_from_now(random.randint(5, 25)))
 
             c_value = round(random.uniform(20_000, 200_000), 2)
             days_left = max(0, (c_end - now()).days)
@@ -480,7 +486,7 @@ async def create_employee_assignments(employees: list, sites: list, admins: list
             assigned_date=start,
             assignment_start=start,
             assignment_end=(
-                days_from_now(random.randint(30, 120)) if random.random() < 0.3 else None
+                to_date_only(days_from_now(random.randint(30, 120))) if random.random() < 0.3 else None
             ),
             status="Active",
             created_by_admin_id=super_admin.uid,
@@ -500,7 +506,7 @@ async def create_employee_assignments(employees: list, sites: list, admins: list
         emp.current_site_name = site.name
         emp.current_manager_id = site.assigned_manager_id
         emp.current_manager_name = site.assigned_manager_name
-        emp.current_assignment_start = start
+        emp.current_assignment_start = to_date_only(start)
         emp.availability_status = "Assigned"
         assigned_count += 1
 
@@ -546,7 +552,7 @@ async def create_temp_assignments(employees: list, sites: list, admins: list) ->
         uid = await get_next_uid("temporary_assignments")
         days = random.randint(7, 28)
         start = rand_date_between(days_ago(60), days_ago(days + 1))
-        end = start + timedelta(days=days)
+        end = to_date_only(start + timedelta(days=days))
         daily = round(random.uniform(50, 80) * 8, 2)
 
         ta = TemporaryAssignment(
