@@ -1103,11 +1103,11 @@ async def main() -> None:
         print("Test data injection complete!")
 
     print()
-    print("Default Login Credentials (password set in DEFAULT_PASSWORD constant):")
+    print("Default Login Credentials:")
     print("   SuperAdmin:   admin@montreal.com")
     print("   Admin:        john.smith@montreal.com")
     print("   Site Manager: mike.wilson@montreal.com")
-    print(f"   Password:     {DEFAULT_PASSWORD!r}")
+    print("   (Password: see DEFAULT_PASSWORD at top of this script)")
     print()
     print(f"Completed in {elapsed:.1f} seconds")
     print()

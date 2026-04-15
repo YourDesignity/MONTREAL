@@ -30,26 +30,48 @@ from backend.models import (
     Counter,
 )
 
-# Collections available for selective clearing
-COLLECTIONS = {
-    "1": ("Admins", Admin),
-    "2": ("Employees", Employee),
-    "3": ("Designations", Designation),
-    "4": ("Projects", Project),
-    "5": ("Contracts", Contract),
-    "6": ("Sites", Site),
-    "7": ("Employee Assignments", EmployeeAssignment),
-    "8": ("Temporary Assignments", TemporaryAssignment),
-    "9": ("Vehicles", Vehicle),
-    "10": ("Fuel Logs", FuelLog),
-    "11": ("Maintenance Logs", MaintenanceLog),
-    "12": ("Attendance Records", Attendance),
-    "13": ("Overtime Records", Overtime),
-    "14": ("Deductions", Deduction),
-    "15": ("Invoices", Invoice),
-    "16": ("Conversations", Conversation),
-    "17": ("Messages", Message),
-    "18": ("Counters (reset IDs)", Counter),
+# Collections available for selective clearing.
+# Display names are kept in a separate dict to avoid data-flow issues.
+COLLECTION_DISPLAY_NAMES = {
+    "1":  "Admins",
+    "2":  "Employees",
+    "3":  "Designations",
+    "4":  "Projects",
+    "5":  "Contracts",
+    "6":  "Sites",
+    "7":  "Employee Assignments",
+    "8":  "Temporary Assignments",
+    "9":  "Vehicles",
+    "10": "Fuel Logs",
+    "11": "Maintenance Logs",
+    "12": "Attendance Records",
+    "13": "Overtime Records",
+    "14": "Deductions",
+    "15": "Invoices",
+    "16": "Conversations",
+    "17": "Messages",
+    "18": "Counters (reset IDs)",
+}
+
+COLLECTION_MODELS = {
+    "1":  Admin,
+    "2":  Employee,
+    "3":  Designation,
+    "4":  Project,
+    "5":  Contract,
+    "6":  Site,
+    "7":  EmployeeAssignment,
+    "8":  TemporaryAssignment,
+    "9":  Vehicle,
+    "10": FuelLog,
+    "11": MaintenanceLog,
+    "12": Attendance,
+    "13": Overtime,
+    "14": Deduction,
+    "15": Invoice,
+    "16": Conversation,
+    "17": Message,
+    "18": Counter,
 }
 
 # Safe deletion order respects foreign-key logic
@@ -91,38 +113,41 @@ async def count_documents(model) -> int:
 async def clear_all() -> None:
     """Delete all records in proper dependency order."""
     for model in ALL_IN_ORDER:
-        name = model.__name__
+        model_class_name = type(model).__name__ if not isinstance(model, type) else model.__name__
         try:
             count = await count_documents(model)
             await model.delete_all()
-            print(f"   Cleared {name}: {count} records removed")
+            print(f"   Cleared {model_class_name}: {count} records removed")
         except Exception as e:
-            print(f"   Warning: Could not clear {name}: {e}")
+            print(f"   Warning: Could not clear {model_class_name}: {e}")
 
 
 async def clear_selected(keys: list) -> None:
     """Delete records for selected collection keys."""
     for num in keys:
-        if num not in COLLECTIONS:
+        if num not in COLLECTION_DISPLAY_NAMES or num not in COLLECTION_MODELS:
             print(f"   Unknown selection: {num}")
             continue
-        label, model = COLLECTIONS[num]
+        coll_name = COLLECTION_DISPLAY_NAMES[num]
+        model = COLLECTION_MODELS[num]
         try:
             count = await count_documents(model)
             await model.delete_all()
-            print(f"   Cleared {label}: {count} records removed")
+            print(f"   Cleared {coll_name}: {count} records removed")
         except Exception as e:
-            print(f"   Warning: Could not clear {label}: {e}")
+            print(f"   Warning: Could not clear {coll_name}: {e}")
 
 
 async def show_counts() -> None:
     """Display current document counts for all collections."""
     print()
     print("Current database state:")
-    for num, (label, model) in sorted(COLLECTIONS.items(), key=lambda x: int(x[0])):
+    for num in sorted(COLLECTION_DISPLAY_NAMES, key=int):
+        coll_name = COLLECTION_DISPLAY_NAMES[num]
+        model = COLLECTION_MODELS[num]
         count = await count_documents(model)
         status = f"{count} records" if count >= 0 else "unavailable"
-        print(f"   [{num:>2}] {label:<30} {status}")
+        print(f"   [{num:>2}] {coll_name:<30} {status}")
     print()
 
 
@@ -169,8 +194,9 @@ async def main() -> None:
     elif choice == "S":
         print()
         print("Available collections:")
-        for num, (label, model) in sorted(COLLECTIONS.items(), key=lambda x: int(x[0])):
-            print(f"   [{num:>2}] {label}")
+        for num in sorted(COLLECTION_DISPLAY_NAMES, key=int):
+            coll_name = COLLECTION_DISPLAY_NAMES[num]
+            print(f"   [{num:>2}] {coll_name}")
         print()
         raw = input("Enter collection numbers to clear (comma-separated, e.g. 1,2,9): ")
         keys = [k.strip() for k in raw.split(",") if k.strip()]
