@@ -96,7 +96,7 @@ def safety_check() -> bool:
     """Refuse to run if DB_NAME looks like production."""
     db_lower = DB_NAME.lower()
     if any(kw in db_lower for kw in ("prod", "production", "live", "real")):
-        print(f"\n SAFETY BLOCK: DB_NAME=''{DB_NAME}' looks like PRODUCTION!")
+        print(f"\n SAFETY BLOCK: DB_NAME='{DB_NAME}' looks like PRODUCTION!")
         print("   Refusing to run. Rename your test DB or set DB_NAME env var.\n")
         return False
     return True
