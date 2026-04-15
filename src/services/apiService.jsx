@@ -254,6 +254,40 @@ export const getInventory = () => fetchWithAuth('/inventory/');
 export const addInventoryItem = (data) => fetchWithAuth('/inventory/', { method: 'POST', body: JSON.stringify(data) });
 export const deleteInventoryItem = (id) => fetchWithAuth(`/inventory/${id}`, { method: 'DELETE' });
 
+// --- MATERIALS ---
+export const getMaterials = () => fetchWithAuth('/materials/');
+export const getMaterialById = (id) => fetchWithAuth(`/materials/${id}`);
+export const createMaterial = (data) => fetchWithAuth('/materials/', { method: 'POST', body: JSON.stringify(data) });
+export const updateMaterial = (id, data) => fetchWithAuth(`/materials/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const deleteMaterial = (id) => fetchWithAuth(`/materials/${id}`, { method: 'DELETE' });
+export const adjustMaterialStock = (id, data) => fetchWithAuth(`/materials/${id}/stock-adjustment`, { method: 'POST', body: JSON.stringify(data) });
+export const getMaterialMovements = (id) => fetchWithAuth(`/materials/${id}/movements`);
+export const useMaterialOnContract = (data) => fetchWithAuth('/materials/use-on-contract', { method: 'POST', body: JSON.stringify(data) });
+
+// --- SUPPLIERS ---
+export const getSuppliers = () => fetchWithAuth('/suppliers/');
+export const createSupplier = (data) => fetchWithAuth('/suppliers/', { method: 'POST', body: JSON.stringify(data) });
+export const updateSupplier = (id, data) => fetchWithAuth(`/suppliers/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const deleteSupplier = (id) => fetchWithAuth(`/suppliers/${id}`, { method: 'DELETE' });
+
+// --- PURCHASE ORDERS ---
+export const getPurchaseOrders = (status) => fetchWithAuth(status ? `/purchase-orders/?status_filter=${status}` : '/purchase-orders/');
+export const getPurchaseOrderById = (id) => fetchWithAuth(`/purchase-orders/${id}`);
+export const createPurchaseOrder = (data) => fetchWithAuth('/purchase-orders/', { method: 'POST', body: JSON.stringify(data) });
+export const receivePurchaseOrder = (id) => fetchWithAuth(`/purchase-orders/${id}/receive`, { method: 'POST' });
+export const deletePurchaseOrder = (id) => fetchWithAuth(`/purchase-orders/${id}`, { method: 'DELETE' });
+
+// --- CONTRACT DOCUMENTS ---
+export const uploadContractDocument = (contractId, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return fetchWithAuth(`/workflow/contracts/${contractId}/upload-document`, { method: 'POST', body: formData });
+};
+export const getContractDocumentUrl = (contractId) => {
+    const token = localStorage.getItem('access_token');
+    return `${API_BASE_URL}/workflow/contracts/${contractId}/download-document?token=${token}`;
+};
+
 // --- 11. COMPANY SETTINGS ---
 export const getCompanySettings = () => fetchWithAuth('/settings/');
 export const updateCompanySettings = (data) => fetchWithAuth('/settings/', { method: 'PUT', body: JSON.stringify(data) });
@@ -300,7 +334,13 @@ const apiService = {
     getVehicles, addVehicle, getTrips, startTrip, endTrip, getMaintenanceLogs, addMaintenanceLog, getFuelLogs, addFuelLog, getExpenses, addExpense,
     getContracts, addContract, deleteContract, addProjectExpense,
     getInvoices, createInvoice, payInvoice, downloadInvoicePDF,
-    getAdmins, createAdmin, getAdminById, updateAdminProfile, updateAdminPassword, deleteAdmin, uploadAdminPhoto, getInventory, addInventoryItem, deleteInventoryItem,
+    getAdmins, createAdmin, getAdminById, updateAdminProfile, updateAdminPassword, deleteAdmin, uploadAdminPhoto,
+    getInventory, addInventoryItem, deleteInventoryItem,
+    getMaterials, getMaterialById, createMaterial, updateMaterial, deleteMaterial,
+    adjustMaterialStock, getMaterialMovements, useMaterialOnContract,
+    getSuppliers, createSupplier, updateSupplier, deleteSupplier,
+    getPurchaseOrders, getPurchaseOrderById, createPurchaseOrder, receivePurchaseOrder, deletePurchaseOrder,
+    uploadContractDocument, getContractDocumentUrl,
     getManagers,
     getManagerProfiles, getManagerProfileById, createManagerProfile, updateManagerProfile, deleteManagerProfile,
     updateManagerCredentials, updateManagerSites,

@@ -96,6 +96,13 @@ const EmployeeProfilePage = () => {
             >
                 Back to Employees
             </Button>
+            <Button
+                icon={<FileTextOutlined />}
+                onClick={() => navigate(`/employees/${empId}/documents`)}
+                style={{ marginBottom: 16, marginLeft: 8 }}
+            >
+                View Documents
+            </Button>
 
             {/* Header Card */}
             <Card style={{ marginBottom: 16 }}>
