@@ -161,6 +161,7 @@ export const deleteDutyAssignment = (id) => fetchWithAuth(`/duty_list/${id}`, { 
 
 // --- 4. PAYSLIPS & FINANCE ---
 export const getFinancialSummary = () => fetchWithAuth('/finance/summary');
+export const getAdvancedFinancialSummary = () => fetchWithAuth('/finance/advanced-summary');
 export const calculatePayslips = (employeeIds) => fetchWithAuth('/payslips/calculate/', { method: 'POST', body: JSON.stringify({ employee_ids: employeeIds }) });
 export const createPayslips = calculatePayslips; // Exporting both names for Dashboard compatibility
 
