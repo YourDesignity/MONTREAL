@@ -14,6 +14,8 @@ from backend.models import (
     ManagerAttendanceConfig, ManagerAttendance, CompanySettings,
     # NEW: Project Workflow System (Phase 1)
     Project, Contract, EmployeeAssignment, TemporaryAssignment,
+    # NEW: Material Management
+    Material, Supplier, PurchaseOrder, MaterialMovement,
 )
 
 # Load Environment Variables
@@ -55,6 +57,8 @@ async def init_db():
                 ManagerAttendanceConfig, ManagerAttendance, CompanySettings,
                 # NEW: Project Workflow System (Phase 1)
                 Project, Contract, EmployeeAssignment, TemporaryAssignment,
+                # NEW: Material Management
+                Material, Supplier, PurchaseOrder, MaterialMovement,
             ]
         )
         print(f"✅ Connected to MongoDB at {DB_NAME}")

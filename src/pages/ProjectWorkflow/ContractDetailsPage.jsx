@@ -2,15 +2,16 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card, Row, Col, Button, Table, Tag, Space, Statistic,
   Empty, message, Tabs, Breadcrumb, Spin, Typography, Progress,
-  Alert, Badge,
+  Alert, Badge, Upload, Modal,
 } from 'antd';
 import {
   ArrowLeftOutlined, FileTextOutlined, EnvironmentOutlined,
   TeamOutlined, DollarOutlined, PlusOutlined, ProjectOutlined,
-  ClockCircleOutlined,
+  ClockCircleOutlined, UploadOutlined, DownloadOutlined, EyeOutlined,
+  FilePdfOutlined,
 } from '@ant-design/icons';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { fetchWithAuth } from '../../services/apiService';
+import { fetchWithAuth, uploadContractDocument, getContractDocumentUrl } from '../../services/apiService';
 import './ContractDetailsPage.css';
 
 const { Title, Text } = Typography;
@@ -32,6 +33,8 @@ const ContractDetailsPage = () => {
   const [project, setProject] = useState(null);
   const [sites, setSites] = useState([]);
   const [workforce, setWorkforce] = useState(null);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [docPreviewVisible, setDocPreviewVisible] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!contractId) return;
@@ -116,6 +119,20 @@ const ContractDetailsPage = () => {
   ];
 
   const activeSites = sites.filter((s) => s.status === 'Active').length;
+
+  const handleDocumentUpload = async (file) => {
+    setUploadingDoc(true);
+    try {
+      await uploadContractDocument(contractId, file);
+      message.success('Contract document uploaded successfully!');
+      fetchData();
+    } catch (err) {
+      message.error(err.message || 'Failed to upload document');
+    } finally {
+      setUploadingDoc(false);
+    }
+    return false; // Prevent default antd upload
+  };
 
   const tabItems = [
     {
@@ -304,6 +321,71 @@ const ContractDetailsPage = () => {
               <Text>{contract.notes}</Text>
             </Card>
           )}
+        </div>
+      ),
+    },
+    {
+      key: 'document',
+      label: (
+        <span>
+          <FilePdfOutlined /> Contract Document{' '}
+          {contract?.document_path && <Badge color="green" />}
+        </span>
+      ),
+      children: (
+        <div>
+          <Card size="small" title="Contract Document">
+            {contract?.document_path ? (
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Space>
+                  <FilePdfOutlined style={{ color: '#1890ff', fontSize: 24 }} />
+                  <div>
+                    <div><strong>{contract.document_name || 'Contract Document'}</strong></div>
+                    <div style={{ color: '#888', fontSize: 12 }}>Uploaded</div>
+                  </div>
+                </Space>
+                <Space>
+                  <Button
+                    icon={<EyeOutlined />}
+                    onClick={() => setDocPreviewVisible(true)}
+                  >
+                    Preview
+                  </Button>
+                  <Button
+                    icon={<DownloadOutlined />}
+                    href={getContractDocumentUrl(contractId)}
+                    target="_blank"
+                  >
+                    Download
+                  </Button>
+                  <Upload
+                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                    beforeUpload={handleDocumentUpload}
+                    showUploadList={false}
+                  >
+                    <Button icon={<UploadOutlined />} loading={uploadingDoc}>
+                      Replace
+                    </Button>
+                  </Upload>
+                </Space>
+              </Space>
+            ) : (
+              <Empty
+                description="No contract document uploaded"
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+              >
+                <Upload
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                  beforeUpload={handleDocumentUpload}
+                  showUploadList={false}
+                >
+                  <Button type="primary" icon={<UploadOutlined />} loading={uploadingDoc}>
+                    Upload Contract Document
+                  </Button>
+                </Upload>
+              </Empty>
+            )}
+          </Card>
         </div>
       ),
     },
@@ -539,6 +621,32 @@ const ContractDetailsPage = () => {
       <Card>
         <Tabs defaultActiveKey="sites" items={tabItems} />
       </Card>
+
+      {/* Document Preview Modal */}
+      <Modal
+        title={`Contract Document — ${contract?.document_name || 'Preview'}`}
+        open={docPreviewVisible}
+        onCancel={() => setDocPreviewVisible(false)}
+        footer={[
+          <Button
+            key="download"
+            icon={<DownloadOutlined />}
+            href={getContractDocumentUrl(contractId)}
+            target="_blank"
+          >
+            Download
+          </Button>,
+          <Button key="close" onClick={() => setDocPreviewVisible(false)}>Close</Button>,
+        ]}
+        width={860}
+        styles={{ body: { padding: 0, height: '75vh' } }}
+      >
+        <iframe
+          src={getContractDocumentUrl(contractId)}
+          style={{ width: '100%', height: '100%', border: 'none', minHeight: '70vh' }}
+          title="Contract Document Preview"
+        />
+      </Modal>
     </div>
   );
 };

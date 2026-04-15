@@ -42,6 +42,7 @@ from backend.routers import (
 )
 from backend.routers import workforce_analytics, project_analytics
 from backend.routers import substitutes, manager_sites
+from backend.routers.materials import router as materials_router, suppliers_router, purchase_orders_router
 
 # --- Initialize Logger ---
 logger = setup_logger("MainApp", log_file="logs/app_main.log", level=logging.DEBUG)
@@ -312,6 +313,9 @@ app.include_router(workforce_analytics.router)
 app.include_router(project_analytics.router)
 app.include_router(substitutes.router)
 app.include_router(manager_sites.router)
+app.include_router(materials_router)
+app.include_router(suppliers_router)
+app.include_router(purchase_orders_router)
 
 @app.get("/", tags=["Root"])
 def read_root():

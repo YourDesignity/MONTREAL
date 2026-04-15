@@ -54,6 +54,12 @@ import WorkforceDashboard from './pages/WorkforceDashboard';
 import ProjectAnalytics from './pages/ProjectAnalytics';
 import MyProfile from './pages/MyProfile';
 
+// --- DOCUMENT MANAGEMENT & INVENTORY SYSTEM ---
+import EmployeeDocuments from './pages/Employees/EmployeeDocuments';
+import MaterialsList from './pages/Inventory/MaterialsList';
+import SuppliersList from './pages/Inventory/SuppliersList';
+import PurchaseOrders from './pages/Inventory/PurchaseOrders';
+
 // --- Styles ---
 import "antd/dist/reset.css"; 
 import "./assets/styles/main.css";
@@ -107,8 +113,14 @@ const App = () => {
             <Route path="vehicles" element={<VehicleManagementPage />} />
             <Route path="projects" element={<ProjectsPage />} />
             <Route path="inventory" element={<InventoryPage />} />
+            <Route path="inventory/materials" element={<MaterialsList />} />
+            <Route path="inventory/suppliers" element={<SuppliersList />} />
+            <Route path="inventory/purchase-orders" element={<PurchaseOrders />} />
             <Route path="site-management" element={<SiteManagement />} />
             <Route path="designations" element={<DesignationManagement />} />
+
+            {/* Employee Documents */}
+            <Route path="employees/:employeeId/documents" element={<EmployeeDocuments />} />
 
             {/* Project Workflow System */}
             <Route path="project-workflow" element={<ProjectDashboard />} />

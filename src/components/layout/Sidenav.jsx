@@ -14,6 +14,9 @@ import {
   BarChartOutlined,
   UsergroupAddOutlined,
   ContactsOutlined,
+  ShopOutlined,
+  ShoppingCartOutlined,
+  BoxPlotOutlined,
 } from "@ant-design/icons";
 import { useAuth } from "../../context/AuthContext";
 import { usePermission } from "../../hooks/usePermission";
@@ -39,6 +42,9 @@ function Sidenav({ color }) {
       { path: "/duty-list", name: "Duty List", icon: <ProfileOutlined />, perm: PERMISSIONS.DUTY_LIST_VIEW },
       { path: "/payslips", name: "Payslips", icon: <DollarOutlined />, perm: PERMISSIONS.PAYSLIPS_VIEW },
       { path: "/inventory", name: "Inventory", icon: <DatabaseOutlined />, perm: PERMISSIONS.INVENTORY_VIEW },
+      { path: "/inventory/materials", name: "Materials", icon: <BoxPlotOutlined />, perm: PERMISSIONS.INVENTORY_VIEW },
+      { path: "/inventory/suppliers", name: "Suppliers", icon: <ShopOutlined />, perm: PERMISSIONS.INVENTORY_VIEW },
+      { path: "/inventory/purchase-orders", name: "Purchase Orders", icon: <ShoppingCartOutlined />, perm: PERMISSIONS.INVENTORY_VIEW },
       { path: "/projects", name: "Projects", icon: <ProjectOutlined />, perm: PERMISSIONS.PROJECTS_VIEW },
       { path: "/project-workflow", name: "Project Workflow", icon: <ApartmentOutlined />, perm: PERMISSIONS.PROJECTS_VIEW },
       { path: "/workflow", name: "Workflow Overview", icon: <ApartmentOutlined />, perm: PERMISSIONS.PROJECTS_VIEW },

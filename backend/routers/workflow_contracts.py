@@ -1,15 +1,23 @@
 # backend/routers/workflow_contracts.py
 
+import os
 import logging
 from typing import List, Optional
 from datetime import date, datetime
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query, Request
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from backend.models import Project, Contract, Site
 from backend.database import get_next_uid
 from backend.security import get_current_active_user
 from backend.utils.logger import setup_logger
+
+# Contract documents storage directory
+_CONTRACT_DOCS_DIR = os.path.join("backend", "uploads", "contracts")
+os.makedirs(_CONTRACT_DOCS_DIR, exist_ok=True)
+
+_MAX_CONTRACT_DOC_SIZE = 10 * 1024 * 1024  # 10 MB
 
 router = APIRouter(
     prefix="/workflow/contracts",
@@ -223,6 +231,127 @@ async def get_contract_workforce_summary(
         "total_temp_cost": total_temp_cost,
         "fulfillment_rate": (total_assigned / total_required * 100) if total_required > 0 else 0,
     }
+
+
+# =============================================================================
+# CONTRACT DOCUMENT UPLOAD / DOWNLOAD
+# =============================================================================
+
+_ALLOWED_CONTRACT_MIME = {
+    "application/pdf",
+    "image/jpeg",
+    "image/png",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+}
+
+
+@router.post("/{contract_id}/upload-document")
+async def upload_contract_document(
+    contract_id: int,
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Upload a document (PDF, image, Word) for a contract."""
+    if current_user.get("role") not in ["SuperAdmin", "Admin"]:
+        raise HTTPException(status_code=403, detail="Only Admins can upload contract documents")
+
+    contract = await Contract.find_one(Contract.uid == contract_id)
+    if not contract:
+        raise HTTPException(status_code=404, detail="Contract not found")
+
+    content = await file.read()
+
+    if len(content) > _MAX_CONTRACT_DOC_SIZE:
+        raise HTTPException(status_code=400, detail="File size must be less than 10MB")
+
+    content_type = file.content_type or ""
+    if content_type not in _ALLOWED_CONTRACT_MIME:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid file type. Allowed: PDF, JPEG, PNG, Word documents"
+        )
+
+    # Remove old document if it exists
+    if contract.document_path and os.path.exists(contract.document_path):
+        try:
+            os.remove(contract.document_path)
+        except OSError:
+            pass
+
+    # Build safe filename — strip directory components and keep only safe characters
+    original_name = os.path.basename(file.filename or "document")
+    safe_name = "".join(c for c in original_name if c.isalnum() or c in ('_', '-', '.'))
+    if not safe_name:
+        safe_name = "document.pdf"
+    # Limit to a single extension (last dot segment)
+    safe_name = safe_name[:100]
+
+    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+    code = "".join(c for c in contract.contract_code if c.isalnum() or c in ('_', '-'))
+    filename = f"{contract_id}_{code}_{timestamp}_{safe_name}"
+    # Ensure filename contains no path separators
+    filename = os.path.basename(filename)
+
+    # Construct path and verify it resolves inside the allowed directory
+    abs_storage_dir = os.path.realpath(_CONTRACT_DOCS_DIR)
+    file_path = os.path.realpath(os.path.join(_CONTRACT_DOCS_DIR, filename))
+    if not file_path.startswith(abs_storage_dir + os.sep):
+        raise HTTPException(status_code=400, detail="Invalid filename")
+
+    with open(file_path, "wb") as f:
+        f.write(content)
+
+    contract.document_path = file_path
+    contract.document_name = original_name
+    contract.updated_at = datetime.now()
+    await contract.save()
+
+    logger.info("Document uploaded for contract %s: %s", contract_id, filename)
+    return {
+        "message": "Document uploaded successfully",
+        "document_name": original_name,
+        "file_size": len(content),
+    }
+
+
+@router.get("/{contract_id}/download-document")
+async def download_contract_document(
+    request: Request,
+    contract_id: int,
+    token: Optional[str] = Query(None),
+):
+    """Download or preview the contract document."""
+    from jose import jwt, JWTError
+    from backend.security import SECRET_KEY, ALGORITHM
+
+    raw_token = token
+    if not raw_token:
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            raw_token = auth_header[len("Bearer "):]
+
+    if not raw_token:
+        raise HTTPException(status_code=401, detail="Authentication token required")
+
+    try:
+        jwt.decode(raw_token, SECRET_KEY, algorithms=[ALGORITHM])
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid or expired authentication token")
+
+    contract = await Contract.find_one(Contract.uid == contract_id)
+    if not contract:
+        raise HTTPException(status_code=404, detail="Contract not found")
+
+    if not contract.document_path or not os.path.exists(contract.document_path):
+        raise HTTPException(status_code=404, detail="No document found for this contract")
+
+    filename = contract.document_name or os.path.basename(contract.document_path)
+    return FileResponse(
+        path=contract.document_path,
+        filename=filename,
+        media_type="application/octet-stream",
+    )
 
 
 @router.delete("/{contract_id}", status_code=204)
