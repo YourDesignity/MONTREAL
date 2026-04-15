@@ -78,6 +78,10 @@ async def get_advanced_financial_summary():
     """
     AT_RISK_MARGIN_THRESHOLD = 10.0
     DAYS_PER_MONTH = 30.44
+    OVERHEAD_RATE = 0.05          # 5% of revenue treated as overhead
+    OPENING_BALANCE_RATE = 0.1    # 10% of revenue used as estimated opening balance
+    TREND_SLOPE_FACTOR = 0.05     # Monthly variance factor for trend distribution
+    TREND_MIDPOINT = 3            # Centre month index for trend slope calculation
     today = datetime.now()
 
     # ── 1. Load base data ────────────────────────────────────────────────────
@@ -173,8 +177,8 @@ async def get_advanced_financial_summary():
     net_profit = total_revenue - total_costs
     overall_margin = (net_profit / total_revenue * 100.0) if total_revenue > 0 else 0.0
 
-    # Overhead estimate: 5% of revenue
-    overhead = round(total_revenue * 0.05, 2)
+    # Overhead estimate using OVERHEAD_RATE of revenue
+    overhead = round(total_revenue * OVERHEAD_RATE, 2)
     total_costs_with_overhead = total_costs + overhead
     net_profit_adj = total_revenue - total_costs_with_overhead
     overall_margin_adj = (net_profit_adj / total_revenue * 100.0) if total_revenue > 0 else 0.0
@@ -189,7 +193,7 @@ async def get_advanced_financial_summary():
             year -= 1
         month_name = datetime(year, month, 1).strftime("%b")
         # Distribute proportionally with slight variance for realism
-        factor = 1.0 + (i - 3) * 0.05  # slight slope
+        factor = 1.0 + (i - TREND_MIDPOINT) * TREND_SLOPE_FACTOR
         m_rev = round(total_revenue / 6.0 * factor, 2)
         m_emp = round(total_employee_costs / 6.0 * factor, 2)
         m_ext = round(total_external_costs / 6.0 * factor, 2)
@@ -267,7 +271,7 @@ async def get_advanced_financial_summary():
             })
 
     # ── 8. Cash flow ─────────────────────────────────────────────────────────
-    starting_balance = round(total_revenue * 0.1, 2)  # Estimated opening balance
+    starting_balance = round(total_revenue * OPENING_BALANCE_RATE, 2)  # Estimated opening balance
     cash_flow = {
         "starting_balance": starting_balance,
         "total_inflows": round(total_revenue, 2),
@@ -291,7 +295,7 @@ async def get_advanced_financial_summary():
     burn_rate_daily = round(total_costs_with_overhead / 30.0, 2)
     runway_days = int(starting_balance / burn_rate_daily) if burn_rate_daily > 0 else 0
 
-    # Workforce utilisation: proportion of employees currently assigned
+    # Workforce utilization: proportion of employees currently assigned
     assigned_count = sum(1 for e in active_employees if e.is_currently_assigned)
     utilization_rate = round((assigned_count / total_emp_count) * 100.0, 1)
 

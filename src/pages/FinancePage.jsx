@@ -515,7 +515,7 @@ const FinancePage = () => {
                     </Card>
                 </Col>
                 <Col xs={24} sm={8}>
-                    <Card title="Workforce Utilisation" className="finance-chart-card gauge-card">
+                    <Card title="Workforce Utilization" className="finance-chart-card gauge-card">
                         <Gauge {...utilizationGaugeConfig} height={200} />
                         <div className="gauge-label">
                             {eff.utilization_rate?.toFixed(1)}% of employees assigned
