@@ -11,7 +11,7 @@ import {
   FilePdfOutlined,
 } from '@ant-design/icons';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { fetchWithAuth, uploadContractDocument, getContractDocumentUrl } from '../../services/apiService';
+import { fetchWithAuth, uploadContractDocument, getContractDocumentUrl, API_BASE_URL } from '../../services/apiService';
 import './ContractDetailsPage.css';
 
 const { Title, Text } = Typography;
@@ -35,6 +35,7 @@ const ContractDetailsPage = () => {
   const [workforce, setWorkforce] = useState(null);
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [docPreviewVisible, setDocPreviewVisible] = useState(false);
+  const [docPreviewUrl, setDocPreviewUrl] = useState(null);
 
   const fetchData = useCallback(async () => {
     if (!contractId) return;
@@ -132,6 +133,39 @@ const ContractDetailsPage = () => {
       setUploadingDoc(false);
     }
     return false; // Prevent default antd upload
+  };
+
+  const handlePreviewDocument = async () => {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      message.error('Authentication required. Please log in again.');
+      return;
+    }
+    setDocPreviewVisible(true);
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/workflow/contracts/${contractId}/download-document`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!response.ok) {
+        throw new Error(`Failed to load document: ${response.status}`);
+      }
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      setDocPreviewUrl(blobUrl);
+    } catch (error) {
+      message.error('Failed to load document preview');
+      console.error('Preview error:', error);
+      setDocPreviewVisible(false);
+    }
+  };
+
+  const handleClosePreview = () => {
+    if (docPreviewUrl) {
+      URL.revokeObjectURL(docPreviewUrl);
+      setDocPreviewUrl(null);
+    }
+    setDocPreviewVisible(false);
   };
 
   const tabItems = [
@@ -347,7 +381,7 @@ const ContractDetailsPage = () => {
                 <Space>
                   <Button
                     icon={<EyeOutlined />}
-                    onClick={() => setDocPreviewVisible(true)}
+                    onClick={handlePreviewDocument}
                   >
                     Preview
                   </Button>
@@ -626,7 +660,7 @@ const ContractDetailsPage = () => {
       <Modal
         title={`Contract Document — ${contract?.document_name || 'Preview'}`}
         open={docPreviewVisible}
-        onCancel={() => setDocPreviewVisible(false)}
+        onCancel={handleClosePreview}
         footer={[
           <Button
             key="download"
@@ -636,16 +670,22 @@ const ContractDetailsPage = () => {
           >
             Download
           </Button>,
-          <Button key="close" onClick={() => setDocPreviewVisible(false)}>Close</Button>,
+          <Button key="close" onClick={handleClosePreview}>Close</Button>,
         ]}
         width={860}
         styles={{ body: { padding: 0, height: '75vh' } }}
       >
-        <iframe
-          src={getContractDocumentUrl(contractId)}
-          style={{ width: '100%', height: '100%', border: 'none', minHeight: '70vh' }}
-          title="Contract Document Preview"
-        />
+        {docPreviewUrl ? (
+          <iframe
+            src={docPreviewUrl}
+            style={{ width: '100%', height: '75vh', border: 'none' }}
+            title="Contract Document Preview"
+          />
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '75vh' }}>
+            <Spin size="large" />
+          </div>
+        )}
       </Modal>
     </div>
   );
