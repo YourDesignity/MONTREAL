@@ -67,7 +67,7 @@ const Sidebar = () => {
         {hasPerm('admin:view_all') && (
           <NavSection title="ANALYTICS" icon={LuChartBar} defaultOpen={true}>
             <NavItem to="/analytics" icon={LuChartPie} label="Analytics" />
-            <NavItem to="/overview" icon={LuChartBar} label="Overview" />
+            <NavItem to="/dashboard" icon={LuChartBar} label="Overview" />
             <NavItem to="/workforce-allocation" icon={LuUsersRound} label="Workforce Alloc." />
           </NavSection>
         )}

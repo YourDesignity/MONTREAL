@@ -376,7 +376,7 @@ const ContractDetailsPage = () => {
       {/* Breadcrumb */}
       <Breadcrumb style={{ marginBottom: 16 }}>
         <Breadcrumb.Item>
-          <Link to="/overview">Dashboard</Link>
+          <Link to="/dashboard">Dashboard</Link>
         </Breadcrumb.Item>
         <Breadcrumb.Item>
           <Link to="/project-workflow">Projects</Link>

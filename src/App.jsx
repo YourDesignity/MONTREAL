@@ -89,8 +89,7 @@ const App = () => {
           <Route element={<Main />}>
             <Route path="dashboard" element={<DashboardPage />} />
             
-            {/* Phase 6: New Dashboard & Analytics */}
-            <Route path="overview" element={<Dashboard />} />
+            {/* Analytics & Workforce */}
             <Route path="workforce-allocation" element={<WorkforceDashboard />} />
             <Route path="analytics" element={<ProjectAnalytics />} />
             
