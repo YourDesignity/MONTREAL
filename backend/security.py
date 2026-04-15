@@ -13,6 +13,9 @@ from dotenv import load_dotenv
 # Import the MongoDB Model
 from backend.models import Admin
 
+# Import RBAC permission helpers
+from backend.config.permissions import has_permission as _rbac_has_permission
+
 # Load environment variables
 load_dotenv()
 
@@ -105,22 +108,44 @@ PRIVILEGED_ROLES = {"SuperAdmin", "Admin"}
 
 def require_permission(required_permission: str):
     """
-    Factory that creates a dependency to check for a specific permission string.
-    SuperAdmin and Admin roles bypass all permission checks.
+    Factory that creates a dependency to check if the current user's role
+    has the specified permission, using the centralised RBAC config.
+
+    Usage:
+        @router.get("/finance/data", dependencies=[Depends(require_permission("finance:view"))])
+        async def get_finance_data():
+            ...
     """
     async def permission_checker(current_user: dict = Depends(get_current_active_user)) -> dict:
-        # SuperAdmin and Admin have ALL permissions (bypass check)
         user_role = current_user.get("role")
-        if user_role in PRIVILEGED_ROLES:
-            return current_user
-
-        # For other roles (e.g. Site Manager), check permissions array
-        user_permissions = current_user.get("perms", [])
-        if required_permission not in user_permissions:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Permission '{required_permission}' required. Access denied."
-            )
+        if not _rbac_has_permission(user_role, required_permission):
+            # Fallback: honour legacy per-token perms array for backward compatibility
+            user_permissions = current_user.get("perms", [])
+            if required_permission not in user_permissions and "all" not in user_permissions:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=f"Permission '{required_permission}' required. Access denied."
+                )
         return current_user
 
     return permission_checker
+
+
+def check_user_permission(current_user: dict, permission: str) -> bool:
+    """
+    Helper to check if the current user object has a specific permission.
+    Uses the centralised RBAC config first; falls back to the token's perms array.
+
+    Args:
+        current_user: JWT payload dict containing at least 'role'
+        permission:   Permission string to check (e.g. "finance:view")
+
+    Returns:
+        True if the user has the permission, False otherwise
+    """
+    user_role = current_user.get("role")
+    if _rbac_has_permission(user_role, permission):
+        return True
+    # Legacy fallback
+    user_permissions = current_user.get("perms", [])
+    return permission in user_permissions or "all" in user_permissions

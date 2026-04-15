@@ -4,7 +4,7 @@ import os
 import psutil
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends
-from backend.security import get_current_active_user
+from backend.security import get_current_active_user, require_permission
 from backend.models import Employee, Admin, Site, Attendance, Schedule, Project, Contract, TemporaryAssignment, EmployeeAssignment
 
 router = APIRouter(
@@ -312,7 +312,7 @@ async def get_workflow_summary():
     }
 
 
-@router.get("/profit-loss", dependencies=[Depends(get_current_active_user)])
+@router.get("/profit-loss", dependencies=[Depends(require_permission("finance:view"))])
 async def get_profit_loss_summary():
     """
     Returns comprehensive profit & loss analytics:
