@@ -107,10 +107,34 @@ const EmployeeDocuments = () => {
         downloadEmployeeDocument(employeeId, docType);
     };
 
-    const handlePreview = (docType) => {
+    const handlePreview = async (docType) => {
         const token = localStorage.getItem('access_token');
-        const url = `${API_BASE_URL}/employees/${employeeId}/download/${docType}?token=${token}`;
-        setPreviewDoc({ type: docType, url });
+        if (!token) {
+            message.error('Authentication required. Please log in again.');
+            return;
+        }
+        try {
+            const response = await fetch(
+                `${API_BASE_URL}/employees/${employeeId}/download/${docType}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            if (!response.ok) {
+                throw new Error(`Failed to load document: ${response.status}`);
+            }
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            setPreviewDoc({ type: docType, url: blobUrl });
+        } catch (error) {
+            message.error('Failed to load document preview');
+            console.error('Preview error:', error);
+        }
+    };
+
+    const handleClosePreview = () => {
+        if (previewDoc?.url) {
+            URL.revokeObjectURL(previewDoc.url);
+        }
+        setPreviewDoc(null);
     };
 
     if (loading) {
@@ -251,22 +275,26 @@ const EmployeeDocuments = () => {
             <Modal
                 title={`Preview: ${previewDoc?.type?.replace('_', ' ').toUpperCase()}`}
                 open={!!previewDoc}
-                onCancel={() => setPreviewDoc(null)}
+                onCancel={handleClosePreview}
                 footer={[
                     <Button key="download" icon={<DownloadOutlined />} onClick={() => handleDownload(previewDoc?.type)}>
                         Download
                     </Button>,
-                    <Button key="close" onClick={() => setPreviewDoc(null)}>Close</Button>,
+                    <Button key="close" onClick={handleClosePreview}>Close</Button>,
                 ]}
                 width={800}
                 styles={{ body: { padding: 0, height: '70vh' } }}
             >
-                {previewDoc && (
+                {previewDoc?.url ? (
                     <iframe
                         src={previewDoc.url}
-                        style={{ width: '100%', height: '100%', border: 'none', minHeight: '60vh' }}
+                        style={{ width: '100%', height: '70vh', border: 'none' }}
                         title="Document Preview"
                     />
+                ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '70vh' }}>
+                        <Spin size="large" />
+                    </div>
                 )}
             </Modal>
         </div>
