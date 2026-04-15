@@ -347,13 +347,38 @@ async def download_contract_document(
         raise HTTPException(status_code=404, detail="Contract not found")
 
     if not contract.document_path or not os.path.exists(contract.document_path):
+        logger.debug(
+            "Download contract document: contract_id=%s path=%s exists=%s",
+            contract_id,
+            contract.document_path,
+            os.path.exists(contract.document_path) if contract.document_path else False,
+        )
         raise HTTPException(status_code=404, detail="No document found for this contract")
 
+    logger.debug(
+        "Serving contract document: contract_id=%s path=%s",
+        contract_id,
+        contract.document_path,
+    )
     filename = contract.document_name or os.path.basename(contract.document_path)
+    ext = os.path.splitext(filename)[1].lower()
+    mime_types = {
+        ".pdf": "application/pdf",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".doc": "application/msword",
+        ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    }
+    media_type = mime_types.get(ext, "application/octet-stream")
+    # Strip control characters (including CR/LF) and escape double-quotes to
+    # prevent HTTP header injection.
+    safe_filename = filename.replace("\r", "").replace("\n", "").replace('"', '\\"')
     return FileResponse(
         path=contract.document_path,
         filename=filename,
-        media_type="application/octet-stream",
+        media_type=media_type,
+        headers={"Content-Disposition": f'inline; filename="{safe_filename}"'},
     )
 
 

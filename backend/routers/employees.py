@@ -102,11 +102,18 @@ async def save_file_dual_storage(
         db_dir = DOCUMENT_DIR
 
     db_path = os.path.join(db_dir, filename)
-    os.makedirs(db_dir, exist_ok=True)
-    with open(db_path, "wb") as f:
+
+    # Convert to absolute path so the stored path works regardless of the
+    # current working directory (avoids 404s on download when CWD differs).
+    project_root = pathlib.Path(__file__).resolve().parent.parent.parent
+    absolute_db_path = str((project_root / db_path).resolve())
+
+    os.makedirs(os.path.dirname(absolute_db_path), exist_ok=True)
+    with open(absolute_db_path, "wb") as f:
         f.write(file_content)
 
-    logger.debug("File saved to database storage for employee_id=%s type=%s", employee_id, file_type)
+    db_path = absolute_db_path
+    logger.debug("File saved to absolute path for employee_id=%s type=%s path=%s", employee_id, file_type, db_path)
 
     # 2. SAVE TO CUSTOM LOCAL STORAGE (user-configurable folder)
     custom_path = None
@@ -650,8 +657,8 @@ async def download_employee_document(
     # If the stored path is relative, resolve it against the project root so that
     # os.path.exists() works regardless of the current working directory.
     if file_path and not os.path.isabs(file_path):
-        project_root = pathlib.Path(__file__).parent.parent.parent
-        file_path = str(project_root / file_path)
+        project_root = pathlib.Path(__file__).resolve().parent.parent.parent
+        file_path = str((project_root / file_path).resolve())
 
     file_exists = os.path.exists(file_path) if file_path else False
     logger.debug(
@@ -666,8 +673,9 @@ async def download_employee_document(
     if document_type == "photo":
         return FileResponse(file_path, filename=filename)
     # Use inline disposition so PDFs render in-browser (preview).
-    # Double-quote the filename to safely handle spaces and special characters.
-    safe_filename = filename.replace('"', '\\"')
+    # Strip control characters (including CR/LF) and escape double-quotes to
+    # prevent HTTP header injection.
+    safe_filename = filename.replace("\r", "").replace("\n", "").replace('"', '\\"')
     return FileResponse(
         file_path,
         media_type="application/pdf",
