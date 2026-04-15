@@ -1,5 +1,6 @@
 import json
 import os
+import pathlib
 import shutil
 import logging
 import datetime
@@ -646,17 +647,30 @@ async def download_employee_document(
     else:
         raise HTTPException(status_code=400, detail="Invalid document type.")
 
-    if not file_path or not os.path.exists(file_path):
+    # If the stored path is relative, resolve it against the project root so that
+    # os.path.exists() works regardless of the current working directory.
+    if file_path and not os.path.isabs(file_path):
+        project_root = pathlib.Path(__file__).parent.parent.parent
+        file_path = str(project_root / file_path)
+
+    file_exists = os.path.exists(file_path) if file_path else False
+    logger.debug(
+        "Serving document for employee_id=%s type=%s exists=%s",
+        employee_id, document_type, file_exists
+    )
+
+    if not file_path or not file_exists:
         raise HTTPException(status_code=404, detail="Document not found")
 
     filename = os.path.basename(file_path)
     if document_type == "photo":
         return FileResponse(file_path, filename=filename)
-    # Use inline disposition so PDFs and images render in-browser (preview).
+    # Use inline disposition so PDFs render in-browser (preview).
     # Double-quote the filename to safely handle spaces and special characters.
     safe_filename = filename.replace('"', '\\"')
     return FileResponse(
         file_path,
+        media_type="application/pdf",
         headers={"Content-Disposition": f'inline; filename="{safe_filename}"'},
     )
 
