@@ -470,10 +470,20 @@ async def receive_purchase_order(
     for item in po.items:
         material = await Material.find_one(Material.uid == item.material_id)
         if material:
-            material.current_stock += item.quantity
-            # Update unit cost with weighted average
-            if item.unit_cost > 0:
-                material.unit_cost = item.unit_cost
+            old_stock = material.current_stock
+            old_cost = material.unit_cost
+            new_qty = item.quantity
+            new_cost = item.unit_cost
+
+            # Weighted average cost calculation
+            if new_cost > 0:
+                total_qty = old_stock + new_qty
+                if total_qty > 0:
+                    material.unit_cost = ((old_stock * old_cost) + (new_qty * new_cost)) / total_qty
+                else:
+                    material.unit_cost = new_cost
+
+            material.current_stock += new_qty
             material.updated_at = datetime.now()
             await material.save()
 

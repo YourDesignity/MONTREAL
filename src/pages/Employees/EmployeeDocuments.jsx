@@ -18,11 +18,10 @@ import {
     getEmployeeById,
     uploadEmployeeDocument,
     downloadEmployeeDocument,
+    API_BASE_URL,
 } from '../../services/apiService';
 
 const { Title, Text } = Typography;
-
-const API_BASE_URL = 'http://127.0.0.1:8000';
 
 function ExpiryBadge({ date }) {
     if (!date) return <Tag color="default">No date set</Tag>;

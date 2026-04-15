@@ -17,6 +17,8 @@ from backend.utils.logger import setup_logger
 _CONTRACT_DOCS_DIR = os.path.join("backend", "uploads", "contracts")
 os.makedirs(_CONTRACT_DOCS_DIR, exist_ok=True)
 
+_MAX_CONTRACT_DOC_SIZE = 10 * 1024 * 1024  # 10 MB
+
 router = APIRouter(
     prefix="/workflow/contracts",
     tags=["Workflow Contracts"],
@@ -260,7 +262,7 @@ async def upload_contract_document(
 
     content = await file.read()
 
-    if len(content) > 10 * 1024 * 1024:
+    if len(content) > _MAX_CONTRACT_DOC_SIZE:
         raise HTTPException(status_code=400, detail="File size must be less than 10MB")
 
     content_type = file.content_type or ""
@@ -277,17 +279,25 @@ async def upload_contract_document(
         except OSError:
             pass
 
-    # Build safe filename
+    # Build safe filename — strip directory components and keep only safe characters
     original_name = os.path.basename(file.filename or "document")
-    # Keep only safe characters
     safe_name = "".join(c for c in original_name if c.isalnum() or c in ('_', '-', '.'))
     if not safe_name:
         safe_name = "document.pdf"
+    # Limit to a single extension (last dot segment)
+    safe_name = safe_name[:100]
 
     timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-    code = contract.contract_code.replace("/", "_").replace("\\", "_")
+    code = "".join(c for c in contract.contract_code if c.isalnum() or c in ('_', '-'))
     filename = f"{contract_id}_{code}_{timestamp}_{safe_name}"
-    file_path = os.path.join(_CONTRACT_DOCS_DIR, filename)
+    # Ensure filename contains no path separators
+    filename = os.path.basename(filename)
+
+    # Construct path and verify it resolves inside the allowed directory
+    abs_storage_dir = os.path.realpath(_CONTRACT_DOCS_DIR)
+    file_path = os.path.realpath(os.path.join(_CONTRACT_DOCS_DIR, filename))
+    if not file_path.startswith(abs_storage_dir + os.sep):
+        raise HTTPException(status_code=400, detail="Invalid filename")
 
     with open(file_path, "wb") as f:
         f.write(content)
