@@ -536,7 +536,7 @@ async def get_available_recipients(current_user: dict = Depends(get_current_acti
     managers, employees, admins = await asyncio.gather(
         Admin.find(Admin.is_active == True, Admin.role == "Site Manager").to_list(),
         Employee.find(Employee.is_active == True).to_list(),
-        Admin.find(Admin.is_active == True, Admin.role.in_(["SuperAdmin", "Admin"])).to_list(),
+        Admin.find({"is_active": True, "role": {"$in": ["SuperAdmin", "Admin"]}}).to_list(),
     )
 
     result = {
