@@ -13,6 +13,8 @@ import ExcelJS from 'exceljs';
 import '../styles/FinancePage.css';
 import { getAdvancedFinancialSummary } from '../services/apiService';
 import { useAuth } from '../context/AuthContext';
+import { usePermission } from '../hooks/usePermission';
+import { PERMISSIONS } from '../constants/permissions';
 
 const { Title, Text } = Typography;
 
@@ -103,11 +105,12 @@ const TrendBadge = ({ value }) => {
 // ── Main component ────────────────────────────────────────────────────────────
 const FinancePage = () => {
     const { user } = useAuth();
+    const { hasPermission } = usePermission();
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState(null);
     const [error, setError] = useState(null);
 
-    const isOwner = user?.role === 'SuperAdmin' || user?.role === 'Admin';
+    const canViewFinance = hasPermission(PERMISSIONS.FINANCE_VIEW);
 
     const loadData = useCallback(async () => {
         setLoading(true);
@@ -123,15 +126,15 @@ const FinancePage = () => {
     }, []);
 
     useEffect(() => {
-        if (isOwner) loadData();
-    }, [isOwner, loadData]);
+        if (canViewFinance) loadData();
+    }, [canViewFinance, loadData]);
 
-    if (!isOwner) {
+    if (!canViewFinance) {
         return (
             <Result
                 status="403"
-                title="Unauthorized Access"
-                subTitle="Managers are not permitted to view corporate financial Profit & Loss statements."
+                title="Access Denied"
+                subTitle="You do not have permission to view financial data."
                 extra={<Button type="primary" href="/dashboard">Back to Dashboard</Button>}
             />
         );
