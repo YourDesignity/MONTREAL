@@ -27,7 +27,6 @@ function Sidenav({ color }) {
       // My Attendance is shown prominently for Site Managers
       ...(user?.role === 'Site Manager' ? [{ path: "/my-attendance", name: "My Attendance", icon: <ClockCircleOutlined />, perm: null }] : []),
       // Phase 6: New pages (admin only)
-      { path: "/overview", name: "Overview", icon: <BarChartOutlined />, perm: 'admin:view_all' },
       { path: "/workforce-allocation", name: "Workforce Alloc.", icon: <UsergroupAddOutlined />, perm: 'admin:view_all' },
       { path: "/analytics", name: "Analytics", icon: <PieChartOutlined />, perm: 'admin:view_all' },
       { path: "/employees", name: "Employees", icon: <UserOutlined />, perm: null },
