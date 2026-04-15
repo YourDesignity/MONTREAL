@@ -102,11 +102,11 @@ async def clear_all() -> None:
 
 async def clear_selected(keys: list) -> None:
     """Delete records for selected collection keys."""
-    for key in keys:
-        if key not in COLLECTIONS:
-            print(f"   Unknown key: {key}")
+    for num in keys:
+        if num not in COLLECTIONS:
+            print(f"   Unknown selection: {num}")
             continue
-        label, model = COLLECTIONS[key]
+        label, model = COLLECTIONS[num]
         try:
             count = await count_documents(model)
             await model.delete_all()
@@ -119,10 +119,10 @@ async def show_counts() -> None:
     """Display current document counts for all collections."""
     print()
     print("Current database state:")
-    for key, (label, model) in sorted(COLLECTIONS.items(), key=lambda x: int(x[0])):
+    for num, (label, model) in sorted(COLLECTIONS.items(), key=lambda x: int(x[0])):
         count = await count_documents(model)
         status = f"{count} records" if count >= 0 else "unavailable"
-        print(f"   [{key:>2}] {label:<30} {status}")
+        print(f"   [{num:>2}] {label:<30} {status}")
     print()
 
 
@@ -169,8 +169,8 @@ async def main() -> None:
     elif choice == "S":
         print()
         print("Available collections:")
-        for key, (label, model) in sorted(COLLECTIONS.items(), key=lambda x: int(x[0])):
-            print(f"   [{key:>2}] {label}")
+        for num, (label, model) in sorted(COLLECTIONS.items(), key=lambda x: int(x[0])):
+            print(f"   [{num:>2}] {label}")
         print()
         raw = input("Enter collection numbers to clear (comma-separated, e.g. 1,2,9): ")
         keys = [k.strip() for k in raw.split(",") if k.strip()]
