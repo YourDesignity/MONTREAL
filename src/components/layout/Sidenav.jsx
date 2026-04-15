@@ -85,7 +85,7 @@ function Sidenav({ color }) {
         </NavLink>
       ),
     }));
-  }, [user?.role, pathname, color, hasPermission]);
+  }, [user, pathname, color, hasPermission]);
 
   return (
     <>

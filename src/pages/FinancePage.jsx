@@ -134,7 +134,7 @@ const FinancePage = () => {
             <Result
                 status="403"
                 title="Access Denied"
-                subTitle="You do not have permission to view financial data. Only SuperAdmin and Admin roles can access this page."
+                subTitle="You do not have permission to view financial data."
                 extra={<Button type="primary" href="/dashboard">Back to Dashboard</Button>}
             />
         );
