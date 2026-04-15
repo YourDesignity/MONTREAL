@@ -206,7 +206,11 @@ async def get_workflow_summary():
         TemporaryAssignment.status == "Active"
     ).to_list()
 
-    total_temp_cost = sum((ta.total_cost or 0.0) for ta in active_temp)
+    total_temp_cost = sum(
+        (ta.daily_rate or 0.0) * (ta.total_days or 0) if ta.rate_type == "Daily"
+        else (ta.hourly_rate or 0.0) * 8 * (ta.total_days or 0)
+        for ta in active_temp
+    )
 
     # Contract expiry alerts
     expiring_soon = []
